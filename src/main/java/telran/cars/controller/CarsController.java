@@ -32,33 +32,34 @@ public class CarsController {
 	final CarsService carsService;
 	@PostMapping
 	CarDto addCar(@RequestBody @Valid CarDto carDto) {
-		log.debug("add: car {}", carDto);
+		log.debug("addCar: received car data: {}", carDto);
 		return carsService.addCar(carDto);
 	}
 	@PostMapping("person")
 	PersonDto addPerson(@RequestBody @Valid PersonDto personDto) {
-		log.debug("add: person {}", personDto);
+		log.debug("addPerson: received person data: {}", personDto);
 		return carsService.addPerson(personDto);
 	}
 	@PutMapping("person")
 	PersonDto updatePerson(@RequestBody @Valid PersonDto personDto) {
-		log.debug("update: person {}", personDto);
+		log.debug("updatePerson: received person data: {}", personDto);
 		return carsService.updatePerson(personDto);
 	}
 	@PutMapping("trade")
 	TradeDealDto purchase(@RequestBody @Valid TradeDealDto tradeDealDto) {
+		log.debug("purchase: received trade deal data: {}", tradeDealDto);
 		return carsService.purchase(tradeDealDto);
 	}
 	@DeleteMapping("person/{id}")
 	PersonDto deletePerson(@PathVariable(name="id") @NotNull(message = MISSING_PERSON_ID_MESSAGE) @Min(value = MIN_PERSON_ID_VALUE, 
 			message = WRONG_MIN_PERSON_ID_VALUE) @Max(value = MAX_PERSON_ID_VALUE, message = WRONG_MAX_PERSON_ID_VALUE) long id) {
-		log.debug("delete: person with ID {}", id);
+		log.debug("deletePerson: person with ID {}", id);
 		return carsService.deletePerson(id);
 	}
 	@DeleteMapping("{carNumber}")
 	CarDto deleteCar(@PathVariable @NotEmpty(message=MISSING_CAR_NUMBER_MESSAGE) @Pattern(regexp = CAR_NUMBER_REGEXP, 
 			message = WRONG_CAR_NUMBER_MESSAGE) String carNumber) {
-		log.debug("delete car: car with number {}", carNumber);
+		log.debug("deleteCar: car with number {}", carNumber);
 		return carsService.deleteCar(carNumber);
 	}
 	@GetMapping("person/{id}")
@@ -68,14 +69,14 @@ public class CarsController {
 		if(res.isEmpty()) {
 			log.warn("getOwnerCars: no cars for person with id {}", id);
 		} else {
-			log.trace("getOwnerCars: cars of person eith id {}", id);
+			log.trace("getOwnerCars: cars of person with id {} {}", id, res);
 		}
 		return res;
 	}
 	@GetMapping("{carNumber}")
 	PersonDto getCarOwner(@PathVariable @NotEmpty(message=MISSING_CAR_NUMBER_MESSAGE) @Pattern(regexp = CAR_NUMBER_REGEXP, 
 			message = WRONG_CAR_NUMBER_MESSAGE) String carNumber) {
-		log.debug("getCarOwner: receuved cer number {}", carNumber);
+		log.debug("getCarOwner: received car number {}", carNumber);
 		return carsService.getCarOwner(carNumber);
 	}
 

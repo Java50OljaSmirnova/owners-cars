@@ -21,9 +21,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import telran.cars.dto.*;
 import telran.cars.exceptions.*;
+import telran.cars.exceptions.controller.CarsExceptionsController;
 import telran.cars.service.CarsService;
 import static telran.cars.api.ValidationConstants.*;
 
+record PersonDtoIdString(String id, String name, String birthDate, String email) {
+	
+}
 @WebMvcTest
 class CarsControllerTest {
 	private static final String CORRECT_BIRTH_DATE = "1999-12-12";
@@ -38,6 +42,7 @@ class CarsControllerTest {
 	private static final String CAR_NOT_FOUND_MESSAGE = "car not found";
 	private static final String CAR_ALREADY_EXISTS = "car is already exists";
 	private static final long WRONG_PERSON_ID = 123l;
+	private static final String WRONG_PERSON_ID_TYPE = "abc";;
 	
 	@MockBean
 	CarsService carsService;
@@ -57,6 +62,7 @@ class CarsControllerTest {
 	PersonDto personWrongBirthDate = new PersonDto(PERSON_ID, "Vasya", WRONG_BIRTH_DATE, "vasya@tel-ran.com");
 	PersonDto personNoBirthDate = new PersonDto(PERSON_ID, "Vasya", null, "vasya@tel-ran.com");
 	PersonDto personMissingFields = new PersonDto(null, null, null, null);
+	PersonDtoIdString personDtoWrongIdType = new PersonDtoIdString(WRONG_PERSON_ID_TYPE, "Vasya", CORRECT_BIRTH_DATE, CORRECT_EMAIL_ADRESS);
 	TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER, PERSON_ID);
 	TradeDealDto tradeDealWrongCarNumber = new TradeDealDto(WRONG_CAR_NUMBER, PERSON_ID);
 	TradeDealDto tradeDealWrongPersonId = new TradeDealDto(CAR_NUMBER, WRONG_PERSON_ID);
@@ -233,6 +239,10 @@ class CarsControllerTest {
 		wrongPersonDataRequest(personWrongId, WRONG_MAX_PERSON_ID_VALUE);
 	}
 	@Test
+	void addPersonWrongIdTypeTest() throws Exception {
+		wrongPersonDataRequest(personDtoWrongIdType, CarsExceptionsController.JSON_TYPE_MISMATCH_MESSAGE);
+	}
+	@Test
 	void purchaseWrongCarNumberTest() throws Exception {
 		purchaseWrongData(tradeDealWrongCarNumber, WRONG_CAR_NUMBER_MESSAGE);
 	}
@@ -283,6 +293,12 @@ class CarsControllerTest {
 		String response = mockMvc.perform(post("http://localhost:8080/cars").contentType(MediaType.APPLICATION_JSON)
 		.content(jsonPersonDto)).andExpect(status().isBadRequest()).andReturn().getResponse().getContentAsString();
 		allFieldsMissingTest(expectedCarMissingFieldsMessage, response);
+	}
+	@Test
+	void testGetOwnerCarsMismatch() throws Exception{
+		String response = mockMvc.perform(get("http://localhost:8080/cars/person/" + WRONG_PERSON_ID_TYPE))
+				.andExpect(status().isBadRequest()).andReturn().getResponse().getContentAsString();
+		assertEquals(CarsExceptionsController.TYPE_MISMATCH_MESSAGE, response);
 	}
 
 }
