@@ -2,6 +2,7 @@ package telran.cars.service;
 
 import java.util.*;
 
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
@@ -9,117 +10,138 @@ import telran.cars.dto.*;
 import telran.cars.exceptions.NotFoundException;
 import telran.cars.service.model.*;
 
-@Service
+@Service("carsService")
 @Slf4j
+@Scope("prototype")
 public class CarsServiceImpl implements CarsService {
 	HashMap<Long, CarOwner> owners = new HashMap<>();
 	HashMap<String, Car> cars = new HashMap<>();
 
 	@Override
 	public PersonDto addPerson(PersonDto personDto) {
-		long id = personDto.id();
-		if(owners.containsKey(id)) {
-			log.error("addPerson: owner with id {} already exist", id);
-			throw new IllegalStateException("Person with id " + id + " already exist");
-		}
-		owners.put(id, new CarOwner(personDto));
 		log.debug("addPerson: received person data: {}", personDto);
-		return owners.get(id).build();
+		long id = personDto.id();
+		CarOwner res = owners.putIfAbsent(id, new CarOwner(personDto));
+		if(res != null) {
+			log.error("addPerson: owner with id {} already exist", id);
+			throw new IllegalStateException(String.format("person  %d already exists", id));
+		}
+		return personDto;
 	}
 
 	@Override
 	public CarDto addCar(CarDto carDto) {
-		String number = carDto.number();
-		if(cars.containsKey(number)) {
-			log.error("addCar: car with number {} already exist", number);
-			throw new IllegalStateException("Car with number " + number + " already exist");
-		}
-		cars.put(number, new Car(carDto));
 		log.debug("addCar: received car data: {}", carDto);
-		return cars.get(number).build();
+		String number = carDto.number();
+		Car res = cars.putIfAbsent(number, new Car(carDto));
+		if(res != null) {
+			log.error("addCar: car with number {} already exist", number);
+			throw new IllegalStateException(String.format("car %s already exists", number));
+		}
+		return carDto;
 	}
 
 	@Override
 	public PersonDto updatePerson(PersonDto personDto) {
+		log.debug("updatePerson: received person data: {}", personDto);
 		long id = personDto.id();
-		CarOwner owner = owners.putIfAbsent(id, new CarOwner(personDto));
-		if(owner == null) {
-			log.error("updatePerson: owner with id {} doesn't exist", id);
-			throw new IllegalStateException("Person with id " + id + " doesn't exist");
-		} else {
-			log.debug("updatePerson: received person data: {}", personDto);
-		}
-		return owners.get(id).build();
-	}
-
-	@Override
-	public PersonDto deletePerson(long id) {
-		CarOwner owner = owners.get(id);
-		if(owner == null) {
-			log.error("deletePerson: owner with id {} doesn't exist", id);
-			throw new NotFoundException("Person with id " + id + " doesn't exist");
-		}
-		owners.remove(id);
-		log.debug("deletePerson: person with ID {}", id);
+		CarOwner owner = owners.computeIfPresent(id, (k, v) -> {
+			v.setEmail(personDto.email());
+			return v;
+		});
+		hasCarOwner(owner, id);
 		return owner.build();
 	}
 
 	@Override
-	public CarDto deleteCar(String number) {
-		Car car = cars.get(number);
-		if(car == null) {
-			log.error("deleteCar: car with number {} doesn't exist", number);
-			throw new NotFoundException("Person with number " + number + " doesn't exist");
+	public PersonDto deletePerson(long id) {
+		log.debug("deletePerson: person with ID {}", id);
+		CarOwner carOwner = owners.get(id);
+		hasCarOwner(carOwner, id);
+		List<Car> cars = carOwner.getCars();
+		cars.forEach(c -> c.setOwner(null));
+		owners.remove(id);
+		return carOwner.build();
+	}
+	private void hasCarOwner(CarOwner owner, long id) {
+		if(owner == null) {
+			throw new NotFoundException(String.format("person %d doesn't exists", id));
 		}
-		cars.remove(number);
+	}
+	private void hasCar(Car car, String carNumber) {
+		if(car == null) {
+			throw new NotFoundException(String.format("car %s doesn't exists", carNumber));
+		}
+	}
+
+	@Override
+	public CarDto deleteCar(String number) {
+		
 		log.debug("deleteCar: car with number {}", number);
+		Car car = cars.get(number);
+		hasCar(car, number);
+		CarOwner carOwner = car.getOwner();
+		carOwner.getCars().remove(car);
+		cars.remove(number);
 		return car.build();
 	}
 
 	@Override
 	public TradeDealDto purchase(TradeDealDto tradeDeal) {
+		log.debug("purchase: received car {}, owner {}", tradeDeal.carNumber(), tradeDeal.personId());
 		String number = tradeDeal.carNumber();
-		long id = tradeDeal.personId();
-		if(!cars.containsKey(number) || !owners.containsKey(id)) {
-			log.error("purchase: owner with id {} or car with number {} doesn't exist", id, number);
-			throw new IllegalStateException("Person with id " + id + "or car with number " + number + " doesn't exist");
+		CarOwner carOwner = null;
+		Long personId = tradeDeal.personId();
+		Car car = cars.get(number);
+		hasCar(car, number);
+		CarOwner oldOwner = car.getOwner();
+		checkSameOwner(personId, oldOwner);
+		if(oldOwner != null) {
+			oldOwner.getCars().remove(car);
 		}
-		cars.get(number).setOwner(owners.get(id));
-		owners.get(id).getCars().add(cars.get(number));
-		log.debug("purchase: received trade deal data: {}", tradeDeal);
+		if(personId != null) {
+
+			log.debug("new owner exists");
+			carOwner = owners.get(personId);
+			hasCarOwner(carOwner, personId);
+			carOwner.getCars().add(car);
+		}
+		car.setOwner(carOwner);
 		return tradeDeal;
+	}
+
+	private void checkSameOwner(Long personId, CarOwner oldOwner) {
+		if((oldOwner == null && personId == null) ||
+				(oldOwner != null && personId == oldOwner.getId())) {
+			throw new IllegalStateException("trade deal with same owner");
+		}
+		
 	}
 
 	@Override
 	public List<CarDto> getOwnerCars(long id) {
 		CarOwner owner = owners.get(id);
-		if(owner == null) {
-			log.error("getOwnerCars: owner with id {} doesn't exist", id);
-			throw new IllegalStateException("Person with id " + id + " doesn't exist");
-		} 
+		hasCarOwner(owner, id);
 		List<Car> res = owner.getCars();
 		if(res.isEmpty()) {
 			log.warn("getOwnerCars: no cars for person with id {}", id);
 		} else {
 			log.trace("getOwnerCars: cars of person with id {} {}", id, res);
 		}
-		return res.stream().map(car -> new CarDto(car.getNumber(), car.getModel())).toList();
+		return res.stream().map(Car::build).toList();
 	}
 
 	@Override
 	public PersonDto getCarOwner(String number) {
 		Car car = cars.get(number);
-		if(car == null) {
-			log.error("deleteCar: car with number {} doesn't exist", number);
-			throw new IllegalStateException("Car with number " + number + " doesn't exist");
-		} 
-		CarOwner res = car.getOwner();
-		if(res == null) {
+		hasCar(car, number);
+		CarOwner carOwner = car.getOwner();
+		if(carOwner == null) {
 			log.warn("getCarOwner: no owner of car with number {}", number);
 		} else {
 			log.debug("getCarOwner: received car number {}", number);
 		}
-		return res.build();
+		return carOwner != null ? carOwner.build() : null;
 	}
 
 }

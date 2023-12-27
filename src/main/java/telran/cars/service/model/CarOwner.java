@@ -8,7 +8,7 @@ import lombok.Getter;
 import telran.cars.dto.PersonDto;
 @Getter
 public class CarOwner {
-	long id;
+	Long id;
 	String name;
 	LocalDate birthDate;
 	String email;
