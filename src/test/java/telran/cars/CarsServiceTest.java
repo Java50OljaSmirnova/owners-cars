@@ -2,6 +2,7 @@ package telran.cars;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -16,9 +17,13 @@ import telran.cars.service.CarsService;
 @SpringBootTest
 class CarsServiceTest {
 	private static final String CAR_NUMBER_1 = "123-45-56";
-	private static final String MODEL_1 = "honda";
 	private static final String CAR_NUMBER_2 = "123-45-67";
+	private static final String CAR_NUMBER_3 = "132-54-76";
+	private static final String CAR_NUMBER_4 = "765-43-21";
+	private static final String CAR_NUMBER_5 = "174-62-53";
+	private static final String MODEL_1 = "honda";
 	private static final String MODEL_2 = "mazda";
+	private static final String MODEL_3 = "toyota";
 	private static final Long PERSON_ID_1 = 123456l;
 	private static final String PERSON_NAME_1=  "Vasya";
 	private static final String PERSON_BIRTHDATE_1 = "1990-02-10";
@@ -28,7 +33,6 @@ class CarsServiceTest {
 	private static final String PERSON_BIRTHDATE_2 = "1990-03-20";
 	private static final String PERSON_EMAIL_2 = "kolya2@gmail.com";
 	private static final Long PERSON_ID_NOT_EXIST = 111111111l;
-	private static final String CAR_NUMBER_3 = "120-45-50";
 	private static final  String NEW_EMAIL = "name1@tel-ran.co.il";
 	PersonDto personDto1 = new PersonDto(PERSON_ID_1, PERSON_NAME_1, PERSON_BIRTHDATE_1, PERSON_EMAIL_1);
 	PersonDto personDto2 = new PersonDto(PERSON_ID_2, PERSON_NAME_2, PERSON_BIRTHDATE_2, PERSON_EMAIL_2);
@@ -36,6 +40,8 @@ class CarsServiceTest {
 	CarDto car1 = new CarDto(CAR_NUMBER_1, MODEL_1);
 	CarDto car2 = new CarDto(CAR_NUMBER_2, MODEL_2);
 	CarDto car3 = new CarDto(CAR_NUMBER_3 , MODEL_2);
+	CarDto car4 = new CarDto(CAR_NUMBER_4 , MODEL_3);
+	CarDto car5 = new CarDto(CAR_NUMBER_5 , MODEL_3);
 	
 	@Autowired
 	ApplicationContext ctx;
@@ -130,16 +136,32 @@ class CarsServiceTest {
 
 	@Test
 	void testGetOwnerCars() {
-//		carsService.addPerson(personDto1);
-//		List<CarDto> ownerCars = carsService.getOwnerCars(PERSON_ID_1);
-//		assertNotNull(ownerCars);
+		List<CarDto> ownerCars = carsService.getOwnerCars(PERSON_ID_1);
+		assertNotNull(ownerCars);
 	}
 
 	@Test
 	void testGetCarOwner() {
-//		carsService.addCar(car1);
-//		carsService.purchase(tradeDeal1);
-//		assertEquals(personDto1, carsService.getCarOwner(CAR_NUMBER_1));
+
+		assertEquals(personDto1, carsService.getCarOwner(CAR_NUMBER_1));
+	}
+	@Test
+	void testMostPopularModels() {
+		carsService.addCar(car3);
+		carsService.addCar(car4);
+		carsService.addCar(car5);
+		carsService.purchase(new TradeDealDto(CAR_NUMBER_3, PERSON_ID_2));
+		carsService.purchase(new TradeDealDto(CAR_NUMBER_4, PERSON_ID_1));
+		carsService.purchase(new TradeDealDto(CAR_NUMBER_5, PERSON_ID_2));
+		List<String> mostPopularModels = carsService.mostPopularModels();
+		String[] actual = mostPopularModels.toArray(String[]::new);
+		Arrays.sort(actual);
+		String[] expected = {
+				MODEL_2, MODEL_3
+		};
+		Arrays.sort(expected);
+		assertArrayEquals(expected, actual);
+				
 	}
 
 }

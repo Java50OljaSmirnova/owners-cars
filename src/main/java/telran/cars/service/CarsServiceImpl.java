@@ -16,28 +16,30 @@ import telran.cars.service.model.*;
 public class CarsServiceImpl implements CarsService {
 	HashMap<Long, CarOwner> owners = new HashMap<>();
 	HashMap<String, Car> cars = new HashMap<>();
+	HashMap<String, Integer> modelPurchaseAmounts = new HashMap<>();
 
 	@Override
 	public PersonDto addPerson(PersonDto personDto) {
-		log.debug("addPerson: received person data: {}", personDto);
+		
 		long id = personDto.id();
 		CarOwner res = owners.putIfAbsent(id, new CarOwner(personDto));
 		if(res != null) {
 			log.error("addPerson: owner with id {} already exist", id);
 			throw new IllegalStateException(String.format("person  %d already exists", id));
 		}
+		log.debug("added person with id: {}", id);
 		return personDto;
 	}
 
 	@Override
 	public CarDto addCar(CarDto carDto) {
-		log.debug("addCar: received car data: {}", carDto);
 		String number = carDto.number();
 		Car res = cars.putIfAbsent(number, new Car(carDto));
 		if(res != null) {
-			log.error("addCar: car with number {} already exist", number);
+			log.error("added car with number {} already exist", number);
 			throw new IllegalStateException(String.format("car %s already exists", number));
 		}
+		log.debug("added car with number: {}", number);
 		return carDto;
 	}
 
@@ -46,7 +48,12 @@ public class CarsServiceImpl implements CarsService {
 		log.debug("updatePerson: received person data: {}", personDto);
 		long id = personDto.id();
 		CarOwner owner = owners.computeIfPresent(id, (k, v) -> {
-			v.setEmail(personDto.email());
+			if(v.getEmail().equals(personDto.email())) {
+				log.warn("nothing to update");
+			} else {
+				v.setEmail(personDto.email());
+				log.debug("person {}, old mail - {}, new mail - {}", id, v.getEmail(), personDto.email());
+			}
 			return v;
 		});
 		hasCarOwner(owner, id);
@@ -55,12 +62,12 @@ public class CarsServiceImpl implements CarsService {
 
 	@Override
 	public PersonDto deletePerson(long id) {
-		log.debug("deletePerson: person with ID {}", id);
 		CarOwner carOwner = owners.get(id);
 		hasCarOwner(carOwner, id);
 		List<Car> cars = carOwner.getCars();
 		cars.forEach(c -> c.setOwner(null));
 		owners.remove(id);
+		log.debug("person {} has been deleted", id);
 		return carOwner.build();
 	}
 	private void hasCarOwner(CarOwner owner, long id) {
@@ -76,13 +83,12 @@ public class CarsServiceImpl implements CarsService {
 
 	@Override
 	public CarDto deleteCar(String number) {
-		
-		log.debug("deleteCar: car with number {}", number);
 		Car car = cars.get(number);
 		hasCar(car, number);
 		CarOwner carOwner = car.getOwner();
 		carOwner.getCars().remove(car);
 		cars.remove(number);
+		log.debug("car {} has been deleted", number);
 		return car.build();
 	}
 
@@ -100,13 +106,15 @@ public class CarsServiceImpl implements CarsService {
 			oldOwner.getCars().remove(car);
 		}
 		if(personId != null) {
-
-			log.debug("new owner exists");
+			log.debug("new owner {}", personId);
 			carOwner = owners.get(personId);
 			hasCarOwner(carOwner, personId);
 			carOwner.getCars().add(car);
+		} else {
+			log.debug("no new owner");
 		}
 		car.setOwner(carOwner);
+		modelPurchaseAmounts.merge(car.getModel(), 1, Integer::sum);
 		return tradeDeal;
 	}
 
@@ -114,19 +122,19 @@ public class CarsServiceImpl implements CarsService {
 		if((oldOwner == null && personId == null) ||
 				(oldOwner != null && personId == oldOwner.getId())) {
 			throw new IllegalStateException("trade deal with same owner");
-		}
-		
+		}	
 	}
 
 	@Override
 	public List<CarDto> getOwnerCars(long id) {
+		log.debug("getOwnerCars for owner {}", id);
 		CarOwner owner = owners.get(id);
 		hasCarOwner(owner, id);
 		List<Car> res = owner.getCars();
 		if(res.isEmpty()) {
-			log.warn("getOwnerCars: no cars for person with id {}", id);
+			log.warn("no cars for person with id {}", id);
 		} else {
-			log.trace("getOwnerCars: cars of person with id {} {}", id, res);
+			log.trace("cars of person with id {} {}", id, res);
 		}
 		return res.stream().map(Car::build).toList();
 	}
@@ -136,12 +144,23 @@ public class CarsServiceImpl implements CarsService {
 		Car car = cars.get(number);
 		hasCar(car, number);
 		CarOwner carOwner = car.getOwner();
+		PersonDto res = null;
 		if(carOwner == null) {
 			log.warn("getCarOwner: no owner of car with number {}", number);
 		} else {
 			log.debug("getCarOwner: received car number {}", number);
+			res = carOwner.build();
 		}
-		return carOwner != null ? carOwner.build() : null;
+		return res;
+	}
+
+	@Override
+	public List<String> mostPopularModels() {
+		int maxAmount = Collections.max(modelPurchaseAmounts.values());
+		log.trace("map of amounts {}", modelPurchaseAmounts);
+		log.debug("maximal amount of purchase, is {}", maxAmount);
+		return modelPurchaseAmounts.entrySet().stream()
+				.filter(e -> e.getValue() == maxAmount).map(e -> e.getKey()).toList();
 	}
 
 }

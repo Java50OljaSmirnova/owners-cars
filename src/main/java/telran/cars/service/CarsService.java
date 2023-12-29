@@ -13,5 +13,6 @@ public interface CarsService {
 	TradeDealDto purchase(TradeDealDto tradeDealDto);
 	List<CarDto> getOwnerCars(long id);
 	PersonDto getCarOwner(String carNumber);
+	List<String> mostPopularModels();
 
 }
