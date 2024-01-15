@@ -1,9 +1,24 @@
 package telran.cars;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static telran.cars.api.ValidationConstants.MISSING_BIRTH_DATE_MESSAGE;
+import static telran.cars.api.ValidationConstants.MISSING_CAR_MODEL_MESSAGE;
+import static telran.cars.api.ValidationConstants.MISSING_CAR_NUMBER_MESSAGE;
+import static telran.cars.api.ValidationConstants.MISSING_PERSON_EMAIL;
+import static telran.cars.api.ValidationConstants.MISSING_PERSON_ID_MESSAGE;
+import static telran.cars.api.ValidationConstants.MISSING_PERSON_NAME_MESSAGE;
+import static telran.cars.api.ValidationConstants.WRONG_CAR_NUMBER_MESSAGE;
+import static telran.cars.api.ValidationConstants.WRONG_DATE_FORMAT;
+import static telran.cars.api.ValidationConstants.WRONG_EMAIL_FORMAT;
+import static telran.cars.api.ValidationConstants.WRONG_MAX_PERSON_ID_VALUE;
+import static telran.cars.api.ValidationConstants.WRONG_MIN_PERSON_ID_VALUE;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -20,10 +35,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import telran.cars.dto.*;
-import telran.cars.exceptions.*;
+import telran.cars.exceptions.NotFoundException;
 import telran.cars.exceptions.controller.CarsExceptionsController;
 import telran.cars.service.CarsService;
-import static telran.cars.api.ValidationConstants.*;
 
 record PersonDtoIdString(String id, String name, String birthDate, String email) {
 	
@@ -36,21 +50,30 @@ class CarsControllerTest {
 	private static final String CORRECT_EMAIL_ADRESS = "vasya@gmail.com";
 	private static final long PERSON_ID = 123000l;
 	private static final String CAR_NUMBER = "123-01-002";
+	private static final String CAR_NUMBER_2 = "123-01-003";
 	private static final String WRONG_CAR_NUMBER = "1-01-2";
 	private static final String PERSON_NOT_FOUND_MESSAGE = "person not found message";
 	private static final String PERSON_ALREADY_EXISTS = "person is already exists";
 	private static final String CAR_NOT_FOUND_MESSAGE = "car not found";
 	private static final String CAR_ALREADY_EXISTS = "car is already exists";
 	private static final long WRONG_PERSON_ID = 123l;
-	private static final String WRONG_PERSON_ID_TYPE = "abc";;
+	private static final String WRONG_PERSON_ID_TYPE = "abc";
+	private static final String MODEL_NAME = "model";
+	private static final String MODEL_NAME_2 = "model123";
+	private static final int MODEL_YEAR = 1995;
+	private static final String CAR_COLOR = "red";
+	private static final CarState CAR_STATE = CarState.GOOD;
+	private static final CarState CAR_STATE2 = CarState.NEW;
+	private static final int CAR_KILOMETERS = 1000;
+	private static final String TRADE_DEAL_DATE = "2023-12-12";
 	
 	@MockBean
 	CarsService carsService;
 	@Autowired
 	MockMvc mockMvc;
-	CarDto carDto = new CarDto(CAR_NUMBER, "model");
-	CarDto carDto1 = new CarDto("123-01-003", "model123");
-	CarDto carMissingFields = new CarDto(null, null);
+	CarDto carDto = new CarDto(CAR_NUMBER, MODEL_NAME, MODEL_YEAR, PERSON_ID, CAR_COLOR, CAR_KILOMETERS, CAR_STATE);
+	CarDto carDto1 = new CarDto(CAR_NUMBER_2, MODEL_NAME_2, MODEL_YEAR, 123001l, "white", 0, CAR_STATE2);
+	CarDto carMissingFields = new CarDto(null, null, 0, null, null, 0, null);
 	
 	@Autowired
 	ObjectMapper mapper;
@@ -63,9 +86,9 @@ class CarsControllerTest {
 	PersonDto personNoBirthDate = new PersonDto(PERSON_ID, "Vasya", null, "vasya@tel-ran.com");
 	PersonDto personMissingFields = new PersonDto(null, null, null, null);
 	PersonDtoIdString personDtoWrongIdType = new PersonDtoIdString(WRONG_PERSON_ID_TYPE, "Vasya", CORRECT_BIRTH_DATE, CORRECT_EMAIL_ADRESS);
-	TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER, PERSON_ID);
-	TradeDealDto tradeDealWrongCarNumber = new TradeDealDto(WRONG_CAR_NUMBER, PERSON_ID);
-	TradeDealDto tradeDealWrongPersonId = new TradeDealDto(CAR_NUMBER, WRONG_PERSON_ID);
+	TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER, PERSON_ID, TRADE_DEAL_DATE);
+	TradeDealDto tradeDealWrongCarNumber = new TradeDealDto(WRONG_CAR_NUMBER, PERSON_ID, TRADE_DEAL_DATE);
+	TradeDealDto tradeDealWrongPersonId = new TradeDealDto(CAR_NUMBER, WRONG_PERSON_ID, TRADE_DEAL_DATE);
 	private String[] expectedCarMissingFieldsMessage = {
 			MISSING_CAR_MODEL_MESSAGE,
 			MISSING_CAR_NUMBER_MESSAGE
@@ -81,10 +104,12 @@ class CarsControllerTest {
 	@Test
 	void testAddCar() throws Exception {
 		when(carsService.addCar(carDto)).thenReturn(carDto);
-		String jsonCarDto = mapper.writeValueAsString(carDto);
+		String jsonCarDto = mapper.writeValueAsString(carDto); //conversion from carDto object to string JSON
 		String actualJSON = mockMvc.perform(post("http://localhost:8080/cars").contentType(MediaType.APPLICATION_JSON)
-				.content(jsonCarDto)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-		assertEquals(jsonCarDto, actualJSON);
+				.content(jsonCarDto)).andExpect(status().isOk()).andReturn().getResponse()
+		.getContentAsString();
+		assertEquals(jsonCarDto, actualJSON );
+		
 	}
 
 	@Test
@@ -135,7 +160,8 @@ class CarsControllerTest {
 	@Test
 	void testGetOwnerCars() throws Exception {
 		
-		List<CarDto> expectedCars = Arrays.asList(new CarDto("ABC123", "Toyota"), new CarDto("XYZ789", "Honda"));
+		List<CarDto> expectedCars = Arrays.asList(new CarDto("ABC123", "Toyota", 2020, null, CAR_COLOR, 1000, CAR_STATE), 
+				new CarDto("XYZ789", "Honda", 2021, null, CAR_COLOR, 1000, CAR_STATE));
 		String jsonExpected = mapper.writeValueAsString(expectedCars);
 		when(carsService.getOwnerCars(PERSON_ID)).thenReturn(expectedCars);
 		String actualJSON = mockMvc.perform(get("http://localhost:8080/cars/person/" + PERSON_ID))
@@ -151,10 +177,7 @@ class CarsControllerTest {
 				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 		assertEquals(jsonExpected, actualJSON);	
 	}
-	@Test
-	void testMostPopularModels() {
-		
-	}
+	
 	@Test
 	void testDeletePersonNotFound() throws Exception {
 		when(carsService.deletePerson(PERSON_ID)).thenThrow(new NotFoundException(PERSON_NOT_FOUND_MESSAGE));
