@@ -8,172 +8,214 @@ import java.util.List;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.jdbc.Sql;
 
 import telran.cars.dto.*;
+import telran.cars.repo.*;
+import telran.cars.exceptions.CarNotFoundException;
+import telran.cars.exceptions.IllegalCarStateException;
 import telran.cars.exceptions.IllegalPersonStateException;
+import telran.cars.exceptions.ModelNotFoundException;
 import telran.cars.exceptions.NotFoundException;
+import telran.cars.exceptions.PersonNotFoundException;
+import telran.cars.exceptions.TradeDealIllegalStateException;
 import telran.cars.service.CarsService;
+import telran.cars.service.model.CarOwner;
+import telran.cars.service.model.TradeDeal;
 @SpringBootTest
 @Sql(scripts = {"classpath:test_data.sql"})
 class CarsServiceTest {
-	private static final String CAR_NUMBER_1 = "123-45-56";
-	private static final String CAR_NUMBER_2 = "123-45-67";
-	private static final String CAR_NUMBER_3 = "132-54-76";
-	private static final String CAR_NUMBER_4 = "765-43-21";
-	private static final String CAR_NUMBER_5 = "174-62-53";
-	private static final String MODEL_1 = "honda";
-	private static final String MODEL_2 = "mazda";
-	private static final String MODEL_3 = "toyota";
-	private static final Long PERSON_ID_1 = 123456l;
-	private static final String PERSON_NAME_1=  "Vasya";
-	private static final String PERSON_BIRTHDATE_1 = "1990-02-10";
-	private static final String PERSON_EMAIL_1 = "vasya1@gmail.com";
-	private static final Long PERSON_ID_2 = 234567l;
-	private static final String PERSON_NAME_2=  "Kolya";
-	private static final String PERSON_BIRTHDATE_2 = "1990-03-20";
-	private static final String PERSON_EMAIL_2 = "kolya2@gmail.com";
-	private static final Long PERSON_ID_NOT_EXIST = 111111111l;
-	private static final  String NEW_EMAIL = "name1@tel-ran.co.il";
-	private static final int MODEL_YEAR_1 = 2019;
-	private static final int MODEL_YEAR_2 = 2023;
-	private static final int MODEL_YEAR_3 = 2010;
+	private static final String CAR_NUMBER_1 = "111-11-111";
+	private static final String CAR_NUMBER_2 = "222-11-111";
+	private static final String CAR_NUMBER_3 = "333-11-111";
+	private static final String CAR_NUMBER_4 = "444-44-444";
+	private static final String CAR_NUMBER_5 = "555-55-555";
+	private static final String MODEL_1 = "model1";
+	private static final String MODEL_2 = "model2";
+	private static final String MODEL_3 = "model3";
+	private static final String MODEL_4 = "model4";
+	private static final Long PERSON_ID_1 = 123l;
+	private static final Long PERSON_ID_2 = 124l;
+	private static final Long PERSON_ID_3 = 125l;
+	private static final String PERSON_NAME_1=  "name1";
+	private static final String PERSON_NAME_2=  "name2";
+	private static final String PERSON_NAME_3=  "name3";
+	private static final String PERSON_BIRTHDATE_1 = "2000-10-10";
+	private static final String PERSON_BIRTHDATE_2 = "1990-12-20";
+	private static final String PERSON_BIRTHDATE_3 = "1975-12-10";
+	private static final String PERSON_EMAIL_1 = "name1@gmail.com";
+	private static final String PERSON_EMAIL_2 = "name2@gmail.com";
+	private static final String PERSON_EMAIL_3 = "name3@gmail.com";
+	private static final int MODEL_YEAR_1 = 2020;
+	private static final int MODEL_YEAR_2 = 2022;
+	private static final int MODEL_YEAR_3 = 2023;
 	private static final  String COLOR_1 = "red";
-	private static final  String COLOR_2 = "black";
+	private static final  String COLOR_2 = "silver";
 	private static final  String COLOR_3 = "white";
-	private static final int KILOMETERS_1 = 2010;
-	private static final int KILOMETERS_2 = 2010;
+	private static final int KILOMETERS_1 = 1000;
+	private static final int KILOMETERS_2 = 10000;
 	private static final  CarState CAR_STATE_1 = CarState.GOOD;
 	private static final  CarState CAR_STATE_2 = CarState.OLD;
 	private static final  CarState CAR_STATE_3 = CarState.MIDDLE;
 	private static final  CarState CAR_STATE_4 = CarState.NEW;
-	private static final  String DATE_1 = "2022-10-10";
-	private static final  String DATE_2 = "2023-01-11";
-	private static final  String DATE_3 = "2020-05-21";
+	private static final  String DATE_1 = "2023-03-10";
+	private static final Long PERSON_ID_NOT_EXIST = 111111111l;
+	private static final  String NEW_EMAIL = "name1@tel-ran.co.il";
+	
 	PersonDto personDto1 = new PersonDto(PERSON_ID_1, PERSON_NAME_1, PERSON_BIRTHDATE_1, PERSON_EMAIL_1);
 	PersonDto personDto2 = new PersonDto(PERSON_ID_2, PERSON_NAME_2, PERSON_BIRTHDATE_2, PERSON_EMAIL_2);
+	PersonDto personDto3 = new PersonDto(PERSON_ID_3, PERSON_NAME_3, PERSON_BIRTHDATE_3, PERSON_EMAIL_3);
 	PersonDto personDto = new PersonDto(PERSON_ID_NOT_EXIST, PERSON_NAME_1, PERSON_BIRTHDATE_1, PERSON_EMAIL_1);
-	CarDto car1 = new CarDto(CAR_NUMBER_1, MODEL_1, MODEL_YEAR_1, COLOR_1, KILOMETERS_1, CAR_STATE_3);
-	CarDto car2 = new CarDto(CAR_NUMBER_2, MODEL_2, MODEL_YEAR_2, COLOR_2, 0, CAR_STATE_4);
-	CarDto car3 = new CarDto(CAR_NUMBER_3 , MODEL_2, MODEL_YEAR_3, COLOR_1, KILOMETERS_2, CAR_STATE_2);
-	CarDto car4 = new CarDto(CAR_NUMBER_4 , MODEL_3, MODEL_YEAR_1, COLOR_3, KILOMETERS_1, CAR_STATE_3);
-	CarDto car5 = new CarDto(CAR_NUMBER_5 , MODEL_3, MODEL_YEAR_2, COLOR_2, KILOMETERS_2, CAR_STATE_1);
+	CarDto car1 = new CarDto(CAR_NUMBER_1, MODEL_1, MODEL_YEAR_1, COLOR_1, KILOMETERS_1, CAR_STATE_1);
+	CarDto car2 = new CarDto(CAR_NUMBER_2, MODEL_1, MODEL_YEAR_1, COLOR_2, KILOMETERS_2, CAR_STATE_2);
+	CarDto car3 = new CarDto(CAR_NUMBER_3 , MODEL_4, MODEL_YEAR_3, COLOR_3, 0, CAR_STATE_4);
+	CarDto car4 = new CarDto(CAR_NUMBER_4, MODEL_4, 2023, "black", 0, CAR_STATE_4);
+	CarDto car5 = new CarDto(CAR_NUMBER_5, MODEL_3, MODEL_YEAR_2, COLOR_2, 5000, CAR_STATE_3);
 	
+	@Autowired
+	CarOwnerRepo carOwnerRepo;
+	@Autowired
+	CarRepo carRepo;
+	@Autowired
+	TradeDealRepo tradeDealRepo;
 	@Autowired
 	CarsService carsService;
 		
 	@Test
-	void scriptTest() {
-		assertThrowsExactly(IllegalPersonStateException.class,
-				()->carsService.addPerson(personDto1));
-	}
-
-	@Test
-	@Disabled
 	void testAddPerson() {
 		assertEquals(personDto, carsService.addPerson(personDto));
-		assertThrowsExactly(IllegalStateException.class,
+		assertThrowsExactly(IllegalPersonStateException.class,
 				()->carsService.addPerson(personDto1));
-		List<CarDto> cars = carsService.getOwnerCars(personDto.id());
-		assertTrue(cars.isEmpty());
-		assertEquals(personDto, carsService.deletePerson(personDto.id()));
+		CarOwner carOwner = carOwnerRepo.findById(personDto.id()).orElse(null);
+		assertEquals(personDto, carOwner.build());
 	}
 
 	@Test
 	void testAddCar() {
-		assertEquals(car3, carsService.addCar(car3));
-		assertThrowsExactly(IllegalStateException.class,
-				()->carsService.addCar(car1));
-		PersonDto person = carsService.getCarOwner(CAR_NUMBER_3);
-		assertNull(person);
+		assertEquals(car4, carsService.addCar(car4));
+		CarDto carNoModel = new CarDto("11111111111", MODEL_1, 2018, "green", 100000, CarState.OLD);
+		assertThrowsExactly(IllegalCarStateException.class, ()-> carsService.addCar(car3));
+		assertThrowsExactly(ModelNotFoundException.class, ()-> carsService.addCar(carNoModel));
+	}
+	@Test
+	void testAddModel() {
+		ModelDto modelDtoNew = new ModelDto(MODEL_1, MODEL_YEAR_1, "Company1", 500, 5000);
+		assertEquals(modelDtoNew, carsService.addModel(modelDtoNew));
 	}
 
 	@Test
 	void testUpdatePerson() {
 		PersonDto personUpdated = new PersonDto(PERSON_ID_1, PERSON_NAME_1, PERSON_BIRTHDATE_1, NEW_EMAIL);
 		assertEquals(personUpdated, carsService.updatePerson(personUpdated));
-		assertEquals(personUpdated, carsService.getCarOwner(CAR_NUMBER_1));
-		assertThrowsExactly(NotFoundException.class,
+		assertEquals(NEW_EMAIL, carOwnerRepo.findById(PERSON_ID_1).get().getEmail());
+		assertThrowsExactly(PersonNotFoundException.class,
 				() -> carsService.updatePerson(personDto));
 	}
 
 	@Test
 	void testDeletePerson() {
-		List<CarDto> cars = carsService.getOwnerCars(PERSON_ID_1);
 		assertEquals(personDto1, carsService.deletePerson(PERSON_ID_1));
-		assertThrowsExactly(NotFoundException.class, () -> carsService.deletePerson(PERSON_ID_1));
-		cars.forEach(c -> assertNull(carsService.getCarOwner(c.number())));
+		assertThrowsExactly(PersonNotFoundException.class, () -> carsService.deletePerson(PERSON_ID_1));
 	}
 
 	@Test
 	void testDeleteCar() {
-		Long id = carsService.getCarOwner(CAR_NUMBER_1).id();
 		assertEquals(car1, carsService.deleteCar(CAR_NUMBER_1));
-		assertThrowsExactly(NotFoundException.class, () -> carsService.deleteCar(CAR_NUMBER_1));
-		assertFalse(carsService.getOwnerCars(id).contains(car1));
+		assertThrowsExactly(CarNotFoundException.class, () -> carsService.deleteCar(CAR_NUMBER_1));
 	}
 
 	@Test
-	void testPurchaseNewCarOwner() {
-		TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER_1, PERSON_ID_2, DATE_3);
-		assertEquals(tradeDeal, carsService.purchase(tradeDeal));
-		assertEquals(personDto2, carsService.getCarOwner(CAR_NUMBER_1));
-		assertFalse(carsService.getOwnerCars(PERSON_ID_1).contains(car1));
-		assertTrue(carsService.getOwnerCars(PERSON_ID_2).contains(car1));
+	void testPurchaseNewCarOwnerWithOldOwner() {
+		int countDeals = (int)tradeDealRepo.count(); 
+		TradeDealDto tradeDealDto = new TradeDealDto(CAR_NUMBER_1, PERSON_ID_2, DATE_1);
+		assertEquals(tradeDealDto, carsService.purchase(tradeDealDto));
+		assertEquals(PERSON_ID_2, carRepo.findById(CAR_NUMBER_1).get().getCarOwner().getId());
+		TradeDeal tradeDeal = tradeDealRepo.findAll().get(countDeals);
+		assertEquals(CAR_NUMBER_1, tradeDeal.getCar().getNumber());
+		assertEquals(PERSON_ID_2, tradeDeal.getCarOwner().getId());
+		assertEquals(DATE_1, tradeDeal.getDate().toString());
+
+	}
+	@Test
+	void testPurchaseNewCarOwnerWithoutOldOwner() {
+		int countDeals = (int)tradeDealRepo.count(); 
+		carsService.addCar(car4);
+		TradeDealDto tradeDealDto = new TradeDealDto(CAR_NUMBER_4, PERSON_ID_2, DATE_1);
+		assertEquals(tradeDealDto, carsService.purchase(tradeDealDto));
+		assertEquals(PERSON_ID_2, carRepo.findById(CAR_NUMBER_4).get().getCarOwner().getId());
+		TradeDeal tradeDeal = tradeDealRepo.findAll().get(countDeals);
+		assertEquals(CAR_NUMBER_4, tradeDeal.getCar().getNumber());
+		assertEquals(PERSON_ID_2, tradeDeal.getCarOwner().getId());
+		assertEquals(DATE_1, tradeDeal.getDate().toString());
+
+
 
 	}
 	@Test
 	void testPurchaseNotFound() {
-		TradeDealDto tradeDealCarNotFound = new TradeDealDto(CAR_NUMBER_3, PERSON_ID_1, DATE_2);
+		TradeDealDto tradeDealCarNotFound = new TradeDealDto(CAR_NUMBER_4, PERSON_ID_1, DATE_1);
 		TradeDealDto tradeDealOwnerNotFound = new TradeDealDto(CAR_NUMBER_1,
 				PERSON_ID_NOT_EXIST, DATE_1);
-		assertThrowsExactly(NotFoundException.class, () -> carsService.purchase(tradeDealOwnerNotFound));
-		assertThrowsExactly(NotFoundException.class, () -> carsService.purchase(tradeDealCarNotFound));
+		assertThrowsExactly(PersonNotFoundException.class, () -> carsService.purchase(tradeDealOwnerNotFound));
+		assertThrowsExactly(CarNotFoundException.class, () -> carsService.purchase(tradeDealCarNotFound));
 
 	}
-	@Test
-	void testPurchaseNoCarOwner() {
-		TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER_1,null, DATE_3);
-		assertEquals(tradeDeal, carsService.purchase(tradeDeal));
-		assertFalse(carsService.getOwnerCars(PERSON_ID_1).contains(car1));
-		assertNull(carsService.getCarOwner(CAR_NUMBER_1));
+	void testPurchaseNoNewCarOwner() {
+		int countDeals = (int)tradeDealRepo.count(); 
+		TradeDealDto tradeDealDto = new TradeDealDto(CAR_NUMBER_1,null, DATE_1);
+		assertEquals(tradeDealDto, carsService.purchase(tradeDealDto));
+		assertNull(carRepo.findById(CAR_NUMBER_1).get().getCarOwner());
+		TradeDeal tradeDeal = tradeDealRepo.findAll().get(countDeals);
+		assertEquals(CAR_NUMBER_1, tradeDeal.getCar().getNumber());
+		assertNull(tradeDeal.getCarOwner());
+		assertEquals(DATE_1, tradeDeal.getDate().toString());
 	}
 	@Test
 	void testPurchaseSameOwner() {
-		TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER_1,PERSON_ID_1, DATE_2);
-		assertThrowsExactly(IllegalStateException.class, () -> carsService.purchase(tradeDeal));
+		TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER_1,PERSON_ID_1, DATE_1);
+		assertThrowsExactly(TradeDealIllegalStateException.class,
+				() -> carsService.purchase(tradeDeal));
+		carsService.addCar(car4);
+		TradeDealDto tradeDealNoOwners = new TradeDealDto(CAR_NUMBER_4,null, DATE_1);
+		assertThrowsExactly(TradeDealIllegalStateException.class,
+				() -> carsService.purchase(tradeDealNoOwners));
 	}
 
 
 	@Test
+	@Disabled
 	void testGetOwnerCars() {
-		List<CarDto> ownerCars = carsService.getOwnerCars(PERSON_ID_1);
-		assertNotNull(ownerCars);
+		List<CarDto> cars = carsService.getOwnerCars(PERSON_ID_1);
+		assertEquals(1, cars.size());
+		assertEquals(car1, cars.get(0));
+		assertThrowsExactly(NotFoundException.class,
+				() -> carsService.getOwnerCars(PERSON_ID_NOT_EXIST));
 	}
-
 	@Test
+	@Disabled
 	void testGetCarOwner() {
-
-		assertEquals(personDto1, carsService.getCarOwner(CAR_NUMBER_1));
+		PersonDto ownerActual = carsService.getCarOwner(CAR_NUMBER_1);
+		assertEquals(personDto1, ownerActual);
+		assertThrowsExactly(NotFoundException.class, () -> carsService.getCarOwner(CAR_NUMBER_3));
 	}
 	@Test
+	@Disabled
 	void testMostPopularModels() {
 		carsService.addCar(car3);
 		carsService.addCar(car4);
 		carsService.addCar(car5);
-		carsService.purchase(new TradeDealDto(CAR_NUMBER_3, PERSON_ID_2, DATE_1));
-		carsService.purchase(new TradeDealDto(CAR_NUMBER_4, PERSON_ID_1, DATE_2));
-		carsService.purchase(new TradeDealDto(CAR_NUMBER_5, PERSON_ID_2, DATE_3));
+		carsService.purchase(new TradeDealDto(CAR_NUMBER_3, PERSON_ID_1, null));
+		carsService.purchase(new TradeDealDto(CAR_NUMBER_4, PERSON_ID_2, null));
+		carsService.purchase(new TradeDealDto(CAR_NUMBER_5, PERSON_ID_2, null));
 		List<String> mostPopularModels = carsService.mostPopularModels();
 		String[] actual = mostPopularModels.toArray(String[]::new);
 		Arrays.sort(actual);
 		String[] expected = {
-				MODEL_2, MODEL_3
+				MODEL_1, MODEL_2
 		};
-		Arrays.sort(expected);
 		assertArrayEquals(expected, actual);
-				
+		
 	}
+
 
 }

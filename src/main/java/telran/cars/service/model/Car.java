@@ -2,12 +2,14 @@ package telran.cars.service.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import telran.cars.dto.CarDto;
 import telran.cars.dto.CarState;
 @Entity
 @Getter
 @Table(name = "cars")
+@NoArgsConstructor
 public class Car {
 	@Id
 	@Column(name="car_number")

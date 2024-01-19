@@ -18,7 +18,7 @@ public class Model {
 	
 	public static Model of (ModelDto modelDto) {
 		Model model = new Model();
-		model.modelYear = new ModelYear(modelDto.getModel(), modelDto.getYear());
+		model.modelYear = new ModelYear(modelDto.getModelName(), modelDto.getModelYear());
 		model.company = modelDto.getCompany();
 		model.enginePower = modelDto.getEnginePower();
 		model.engineCapacity = modelDto.getEngineCapacity();

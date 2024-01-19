@@ -71,9 +71,9 @@ class CarsControllerTest {
 	CarsService carsService;
 	@Autowired
 	MockMvc mockMvc;
-	CarDto carDto = new CarDto(CAR_NUMBER, MODEL_NAME, MODEL_YEAR, PERSON_ID, CAR_COLOR, CAR_KILOMETERS, CAR_STATE);
-	CarDto carDto1 = new CarDto(CAR_NUMBER_2, MODEL_NAME_2, MODEL_YEAR, 123001l, "white", 0, CAR_STATE2);
-	CarDto carMissingFields = new CarDto(null, null, 0, null, null, 0, null);
+	CarDto carDto = new CarDto(CAR_NUMBER, MODEL_NAME, MODEL_YEAR, CAR_COLOR, CAR_KILOMETERS, CAR_STATE);
+	CarDto carDto1 = new CarDto(CAR_NUMBER_2, MODEL_NAME_2, MODEL_YEAR, "white", 0, CAR_STATE2);
+	CarDto carMissingFields = new CarDto(null, null, 0, null, 0, null);
 	
 	@Autowired
 	ObjectMapper mapper;
@@ -160,8 +160,8 @@ class CarsControllerTest {
 	@Test
 	void testGetOwnerCars() throws Exception {
 		
-		List<CarDto> expectedCars = Arrays.asList(new CarDto("ABC123", "Toyota", 2020, null, CAR_COLOR, 1000, CAR_STATE), 
-				new CarDto("XYZ789", "Honda", 2021, null, CAR_COLOR, 1000, CAR_STATE));
+		List<CarDto> expectedCars = Arrays.asList(new CarDto("ABC123", "Toyota", 2020, CAR_COLOR, 1000, CAR_STATE), 
+				new CarDto("XYZ789", "Honda", 2021, CAR_COLOR, 1000, CAR_STATE));
 		String jsonExpected = mapper.writeValueAsString(expectedCars);
 		when(carsService.getOwnerCars(PERSON_ID)).thenReturn(expectedCars);
 		String actualJSON = mockMvc.perform(get("http://localhost:8080/cars/person/" + PERSON_ID))

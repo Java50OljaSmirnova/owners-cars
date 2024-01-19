@@ -3,9 +3,9 @@ package telran.cars.exceptions;
 import telran.cars.api.ServiceExceptionMessages;
 
 @SuppressWarnings("serial")
-public class CarNotFoundeException extends NotFoundException {
+public class CarNotFoundException extends NotFoundException {
 
-	public CarNotFoundeException() {
+	public CarNotFoundException() {
 		super(ServiceExceptionMessages.CAR_NOT_FOUND);
 	
 	}
