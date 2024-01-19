@@ -18,10 +18,10 @@ public class Model {
 	
 	public static Model of (ModelDto modelDto) {
 		Model model = new Model();
-		model.modelYear = new ModelYear(modelDto.model(), modelDto.year());
-		model.company = modelDto.company();
-		model.enginePower = modelDto.enginePower();
-		model.engineCapacity = modelDto.engineCapacity();
+		model.modelYear = new ModelYear(modelDto.getModel(), modelDto.getYear());
+		model.company = modelDto.getCompany();
+		model.enginePower = modelDto.getEnginePower();
+		model.engineCapacity = modelDto.getEngineCapacity();
 		return model;
 	}
 	public ModelDto build (Model model) {

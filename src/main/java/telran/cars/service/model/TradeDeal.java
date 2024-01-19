@@ -3,6 +3,7 @@ package telran.cars.service.model;
 import java.time.LocalDate;
 
 import jakarta.persistence.*;
+import lombok.Setter;
 import telran.cars.dto.TradeDealDto;
 
 @Entity
@@ -13,11 +14,14 @@ public class TradeDeal {
 	long id;
 	@ManyToOne
 	@JoinColumn(name="car_number", nullable = false)
+	@Setter
 	Car car;
 	@ManyToOne
 	@JoinColumn(name="owner_id")
+	@Setter
 	CarOwner carOwner;
 	@Temporal(TemporalType.DATE)
+	@Setter
 	LocalDate date;
 	
 	public static TradeDeal of(TradeDealDto tradeDealDto) {

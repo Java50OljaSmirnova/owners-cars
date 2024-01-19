@@ -10,8 +10,6 @@ public record CarDto(
 		@NotEmpty(message=MISSING_CAR_MODEL_MESSAGE) String model, 
 		@NotNull(message = MISSING_MODEL_YEAR_MESSAGE) @Min(value = MIN_YEAR_VALUE, message = WRONG_MIN_YEAR_VALUE) 
 		@Max(value = MAX_YEAR_VALUE, message = WRONG_MAX_YEAR_VALUE) int year, 
-		@Min(value = MIN_PERSON_ID_VALUE, message = WRONG_MIN_PERSON_ID_VALUE) @Max(value = MAX_PERSON_ID_VALUE, 
-		    message = WRONG_MAX_PERSON_ID_VALUE) Long id,
 		@NotEmpty (message = MISSING_CAR_COLOR_MESSAGE) String color, 
 		@NotNull(message = MISSING_KILOMETERS_MESSAGE) @Min(value = MIN_KILOMETERS_VALUE, message = WRONG_MIN_KILOMETERS_VALUE) 
 		    @Max(value = MAX_KILOMETERS_VALUE, message = WRONG_MAX_KILOMETERS_VALUE) int kilometrs,

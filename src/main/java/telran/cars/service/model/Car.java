@@ -2,6 +2,7 @@ package telran.cars.service.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 import telran.cars.dto.CarDto;
 import telran.cars.dto.CarState;
 @Entity
@@ -9,32 +10,35 @@ import telran.cars.dto.CarState;
 @Table(name = "cars")
 public class Car {
 	@Id
+	@Column(name="car_number")
 	String number;
 	@ManyToOne
 	@JoinColumns({@JoinColumn(name="model_name", nullable = false), @JoinColumn(name="model_year", nullable = false)})
+	@Setter
 	Model model;
 	@ManyToOne
 	@JoinColumn(name="owner_id", nullable = true)
+	@Setter
 	CarOwner carOwner;
 	String color;
+	@Setter
 	int kilometers;
 	@Enumerated(EnumType.STRING) // value in the table will be a string(by default a number)
+	@Column(name="car_state")
 	CarState state;
-	
-	public static Car of(CarDto carDto) {
-		Car car = new Car();
-		car.number = carDto.number();
-		car.model = new Model();
-		car.model.modelYear = new ModelYear(carDto.model(), carDto.year());
-		car.carOwner.id = carDto.id();
-		car.color = carDto.color();
-		car.kilometers = carDto.kilometrs();
-		car.state = carDto.state();
-		return car;	
+	public Car(String number, String color, int kilometers, CarState state) {
+		super();
+		this.number = number;
+		this.color = color;
+		this.kilometers = kilometers;
+		this.state = state;
 	}
-	public CarDto build(Car car) {
-		return new CarDto(car.number, car.model.modelYear.getName(), car.model.modelYear.getYear(), 
-				car.carOwner.id, car.color, car.kilometers, car.state);
+	public static Car of(CarDto carDto) {
+		
+		return new Car(carDto.number(), carDto.color(), carDto.kilometrs(), carDto.state());
+	}
+	public CarDto build() {
+		return new CarDto(number, model.modelYear.getName(), model.modelYear.getYear(), color, kilometers, state);
 	}
 
 }

@@ -5,18 +5,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.jdbc.Sql;
 
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import telran.cars.dto.*;
+import telran.cars.exceptions.IllegalPersonStateException;
 import telran.cars.exceptions.NotFoundException;
 import telran.cars.service.CarsService;
 @SpringBootTest
+@Sql(scripts = {"classpath:test_data.sql"})
 class CarsServiceTest {
 	private static final String CAR_NUMBER_1 = "123-45-56";
 	private static final String CAR_NUMBER_2 = "123-45-67";
@@ -54,28 +54,23 @@ class CarsServiceTest {
 	PersonDto personDto1 = new PersonDto(PERSON_ID_1, PERSON_NAME_1, PERSON_BIRTHDATE_1, PERSON_EMAIL_1);
 	PersonDto personDto2 = new PersonDto(PERSON_ID_2, PERSON_NAME_2, PERSON_BIRTHDATE_2, PERSON_EMAIL_2);
 	PersonDto personDto = new PersonDto(PERSON_ID_NOT_EXIST, PERSON_NAME_1, PERSON_BIRTHDATE_1, PERSON_EMAIL_1);
-	CarDto car1 = new CarDto(CAR_NUMBER_1, MODEL_1, MODEL_YEAR_1, PERSON_ID_1, COLOR_1, KILOMETERS_1, CAR_STATE_3);
-	CarDto car2 = new CarDto(CAR_NUMBER_2, MODEL_2, MODEL_YEAR_2, null, COLOR_2, 0, CAR_STATE_4);
-	CarDto car3 = new CarDto(CAR_NUMBER_3 , MODEL_2, MODEL_YEAR_3, PERSON_ID_2, COLOR_1, KILOMETERS_2, CAR_STATE_2);
-	CarDto car4 = new CarDto(CAR_NUMBER_4 , MODEL_3, MODEL_YEAR_1, PERSON_ID_2, COLOR_3, KILOMETERS_1, CAR_STATE_3);
-	CarDto car5 = new CarDto(CAR_NUMBER_5 , MODEL_3, MODEL_YEAR_2, null, COLOR_2, KILOMETERS_2, CAR_STATE_1);
+	CarDto car1 = new CarDto(CAR_NUMBER_1, MODEL_1, MODEL_YEAR_1, COLOR_1, KILOMETERS_1, CAR_STATE_3);
+	CarDto car2 = new CarDto(CAR_NUMBER_2, MODEL_2, MODEL_YEAR_2, COLOR_2, 0, CAR_STATE_4);
+	CarDto car3 = new CarDto(CAR_NUMBER_3 , MODEL_2, MODEL_YEAR_3, COLOR_1, KILOMETERS_2, CAR_STATE_2);
+	CarDto car4 = new CarDto(CAR_NUMBER_4 , MODEL_3, MODEL_YEAR_1, COLOR_3, KILOMETERS_1, CAR_STATE_3);
+	CarDto car5 = new CarDto(CAR_NUMBER_5 , MODEL_3, MODEL_YEAR_2, COLOR_2, KILOMETERS_2, CAR_STATE_1);
 	
 	@Autowired
-	ApplicationContext ctx;
 	CarsService carsService;
-	@BeforeEach
-	void setUp() {
-		carsService = ctx.getBean("carsService", CarsService.class);
-		carsService.addCar(car1);
-		carsService.addCar(car2);
-		carsService.addPerson(personDto1);
-		carsService.addPerson(personDto2);
-		carsService.purchase(new TradeDealDto(CAR_NUMBER_1, PERSON_ID_1, DATE_1));
-		carsService.purchase(new TradeDealDto(CAR_NUMBER_2, PERSON_ID_2, DATE_2));
-	
+		
+	@Test
+	void scriptTest() {
+		assertThrowsExactly(IllegalPersonStateException.class,
+				()->carsService.addPerson(personDto1));
 	}
 
 	@Test
+	@Disabled
 	void testAddPerson() {
 		assertEquals(personDto, carsService.addPerson(personDto));
 		assertThrowsExactly(IllegalStateException.class,

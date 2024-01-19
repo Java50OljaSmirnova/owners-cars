@@ -2,6 +2,8 @@ package telran.cars.service.model;
 
 import java.time.LocalDate;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import telran.cars.dto.PersonDto;
@@ -10,6 +12,7 @@ import jakarta.persistence.*;
 @NoArgsConstructor
 @Entity
 @Table(name = "car_owners")
+@AllArgsConstructor(access=AccessLevel.PRIVATE)
 public class CarOwner {
 	@Id
 	Long id;
@@ -18,11 +21,10 @@ public class CarOwner {
 	@Temporal(TemporalType.DATE)
 	LocalDate birthDate;
 	String email;
-	public CarOwner(PersonDto personDto) {
-		id = personDto.id();
-		name = personDto.name();
-		birthDate = LocalDate.parse(personDto.birthDate());
-		email = personDto.email();
+	public static CarOwner of(PersonDto personDto) {
+		return new CarOwner(personDto.id(), personDto.name(),
+				LocalDate.parse(personDto.birthDate()), personDto.email());
+
 	}
 	public PersonDto build() {
 		return new PersonDto(id, name, birthDate.toString(), email);

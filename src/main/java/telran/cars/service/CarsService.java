@@ -7,6 +7,7 @@ import telran.cars.dto.*;
 public interface CarsService {
 	PersonDto addPerson(PersonDto personDto);
 	CarDto addCar(CarDto carDto);
+	ModelDto addModel(ModelDto modelDto);
 	PersonDto updatePerson(PersonDto personDto);
 	PersonDto deletePerson(long id);
 	CarDto deleteCar(String carNumber);
