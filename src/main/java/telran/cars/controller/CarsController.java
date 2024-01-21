@@ -80,8 +80,8 @@ public class CarsController {
 		return carsService.getCarOwner(carNumber);
 	}
 	@GetMapping("models")
-	List<String> mostPopularModels(){
-		return carsService.mostPopularModels();
+	List<String> mostSoldModelNames(){
+		return carsService.mostSoldModelNames();
 	}
 
 }

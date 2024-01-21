@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
+import jakarta.transaction.Transactional.TxType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import telran.cars.dto.*;
@@ -60,10 +61,6 @@ public class CarsServiceImpl implements CarsService {
 	@Transactional
 	public PersonDto deletePerson(long id) {
 		CarOwner carOwner = carOwnerRepo.findById(id).orElseThrow(() -> new PersonNotFoundException());
-		List<Car> carForOwnerNull = carRepo.findByCarOwnerId(id);
-		carForOwnerNull.forEach(c -> c.setCarOwner(null));
-		List<TradeDeal> dealForOwnerNulling = tradeDealRepo.findByCarOwnerId(id);
-		dealForOwnerNulling.forEach(d -> d.setCarOwner(null));
 		carOwnerRepo.deleteById(id);
 		return carOwner.build();
 	}
@@ -72,8 +69,6 @@ public class CarsServiceImpl implements CarsService {
 	@Transactional
 	public CarDto deleteCar(String carNumber) {
 		Car car = carRepo.findById(carNumber).orElseThrow(() -> new CarNotFoundException());
-		List<TradeDeal> dealForCarNulling = tradeDealRepo.findByCarNumber(carNumber);
-		dealForCarNulling.forEach(d -> d.setCar(null));
 		carRepo.deleteById(carNumber);
 		return car.build();
 	}
@@ -91,6 +86,8 @@ public class CarsServiceImpl implements CarsService {
 			if(oldCarOwner != null && oldCarOwner.getId() == personId) {
 				throw new TradeDealIllegalStateException();
 			}
+		} else if (oldCarOwner == null) {
+			throw new TradeDealIllegalStateException();
 		}
 		TradeDeal tradeDeal = new TradeDeal();
 		tradeDeal.setCar(car);
@@ -105,22 +102,30 @@ public class CarsServiceImpl implements CarsService {
 	@Override
 	@Transactional
 	public List<CarDto> getOwnerCars(long id) {
-		// TODO Auto-generated method stub
-		return null;
+		List<Car> cars = carRepo.findByCarOwnerId(id);
+		if(cars.isEmpty()) {
+			log.warn("person with id {} has no car", id);
+		} else {
+			log.debug("person with id {} has {} cars", id, cars.size());
+		}
+		return cars.stream().map(Car::build).toList();
 	}
 
 	@Override
 	@Transactional
 	public PersonDto getCarOwner(String carNumber) {
-		// TODO Auto-generated method stub
-		return null;
+		Car car = carRepo.findById(carNumber).orElseThrow(()-> new CarNotFoundException());
+		CarOwner carOwner = car.getCarOwner();
+		
+		return carOwner != null ? carOwner.build() : null;
 	}
 
 	@Override
 	@Transactional
-	public List<String> mostPopularModels() {
-		// TODO Auto-generated method stub
-		return null;
+	public List<String> mostSoldModelNames() {
+		List<String> res = modelRepo.findMostSoldModelNames();
+		log.trace("most sold model names ar {}", res);
+		return res;
 	}
 
 	@Override
@@ -133,6 +138,54 @@ public class CarsServiceImpl implements CarsService {
 		Model model = Model.of(modelDto);
 		modelRepo.save(model);
 		return modelDto;
+	}
+
+	@Override
+	public List<ModelNameAmount> mostPopularModelNames(int nModels) {
+		List<ModelNameAmount> res = modelRepo.findMostPopularModelNames(nModels);
+		res.forEach(mn -> log.debug("model name is {}, number of cars {}", mn.getModelName(), mn.getAmount()));
+		return res;
+	}
+
+	@Override
+	/**
+	 * returns count of trade deals for a given 'modelName'
+	 * at a given year / month
+	 * Try to apply only interface method name without @Query annotation
+	 */
+	public long countTradeDealAtMonthModel(String modelName, int month, int year) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	/**
+	 * returns list of a given number of most popular (most cars amount)
+	 *  model names and appropriate amounts of the cars,
+	 * owners of which have an age in a given range
+	 */
+	public List<ModelNameAmount> mostPopularModelNameByOwnerAges(int nModels, int ageFrom, int ageTo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	/**
+	 * returns one most popular color of a given model
+	 */
+	public String oneMostPopularColorModel(String model) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	/**
+	 * returns minimal values of engine power and capacity
+	 * of car owners having an age in a given range
+	 */
+	public EnginePowerCapacity minEnginePowerCapacityByOwnerAges(int ageFrom, int ageTo) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

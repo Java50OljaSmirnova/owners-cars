@@ -1,5 +1,8 @@
 package telran.cars.service.model;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +24,7 @@ public class Car {
 	@ManyToOne
 	@JoinColumn(name="owner_id", nullable = true)
 	@Setter
+	@OnDelete(action = OnDeleteAction.SET_NULL)
 	CarOwner carOwner;
 	String color;
 	@Setter
