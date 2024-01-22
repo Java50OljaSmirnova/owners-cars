@@ -2,7 +2,6 @@ package telran.cars;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.*;
@@ -16,7 +15,6 @@ import telran.cars.exceptions.CarNotFoundException;
 import telran.cars.exceptions.IllegalCarStateException;
 import telran.cars.exceptions.IllegalPersonStateException;
 import telran.cars.exceptions.ModelNotFoundException;
-import telran.cars.exceptions.NotFoundException;
 import telran.cars.exceptions.PersonNotFoundException;
 import telran.cars.exceptions.TradeDealIllegalStateException;
 import telran.cars.service.CarsService;
@@ -34,9 +32,9 @@ class CarsServiceTest {
 	private static final String MODEL_2 = "model2";
 	private static final String MODEL_3 = "model3";
 	private static final String MODEL_4 = "model4";
-	private static final Long PERSON_ID_1 = 123l;
-	private static final Long PERSON_ID_2 = 124l;
-	private static final Long PERSON_ID_3 = 125l;
+	private static final long PERSON_ID_1 = 123l;
+	private static final long PERSON_ID_2 = 124l;
+	private static final long PERSON_ID_3 = 125l;
 	private static final String PERSON_NAME_1=  "name1";
 	private static final String PERSON_NAME_2=  "name2";
 	private static final String PERSON_NAME_3=  "name3";
@@ -59,7 +57,7 @@ class CarsServiceTest {
 	private static final  CarState CAR_STATE_3 = CarState.MIDDLE;
 	private static final  CarState CAR_STATE_4 = CarState.NEW;
 	private static final  String DATE_1 = "2023-03-10";
-	private static final Long PERSON_ID_NOT_EXIST = 111111111l;
+	private static final long PERSON_ID_NOT_EXIST = 111111111l;
 	private static final  String NEW_EMAIL = "name1@tel-ran.co.il";
 	
 	PersonDto personDto1 = new PersonDto(PERSON_ID_1, PERSON_NAME_1, PERSON_BIRTHDATE_1, PERSON_EMAIL_1);
@@ -69,7 +67,7 @@ class CarsServiceTest {
 	CarDto car1 = new CarDto(CAR_NUMBER_1, MODEL_1, MODEL_YEAR_1, COLOR_1, KILOMETERS_1, CAR_STATE_1);
 	CarDto car2 = new CarDto(CAR_NUMBER_2, MODEL_1, MODEL_YEAR_1, COLOR_2, KILOMETERS_2, CAR_STATE_2);
 	CarDto car3 = new CarDto(CAR_NUMBER_3 , MODEL_4, MODEL_YEAR_3, COLOR_3, 0, CAR_STATE_4);
-	CarDto car4 = new CarDto(CAR_NUMBER_4, MODEL_4, 2023, "black", 0, CAR_STATE_4);
+	CarDto car4 = new CarDto(CAR_NUMBER_4, MODEL_4, 2023, COLOR_3, 0, CAR_STATE_4);
 	CarDto car5 = new CarDto(CAR_NUMBER_5, MODEL_3, 2021, COLOR_2, 5000, CAR_STATE_3);
 	
 	@Autowired
@@ -188,7 +186,13 @@ class CarsServiceTest {
 	 * the method has been written at CW #64
 	 */
 	void testGetOwnerCars() {
-		//TODO
+		carsService.addCar(car4);
+		TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER_4, PERSON_ID_2, DATE_1);
+		carsService.purchase(tradeDeal);
+		List<CarDto> actual = carsService.getOwnerCars(PERSON_ID_2);
+		assertEquals(2, actual.size());
+		assertEquals(car4, actual.get(1));
+		assertThrowsExactly(PersonNotFoundException.class, ()-> carsService.getOwnerCars(126l));
 	}
 	@Test
 	/**
@@ -196,7 +200,9 @@ class CarsServiceTest {
 	 * the method has been written at CW #64
 	 */
 	void testGetCarOwner() {
-		//TODO
+		PersonDto actual = carsService.getCarOwner(CAR_NUMBER_2);
+		assertEquals(personDto2, actual);
+		assertThrowsExactly(CarNotFoundException.class, ()-> carsService.getCarOwner(CAR_NUMBER_4));
 	}
 	@Test
 	/**
@@ -204,7 +210,8 @@ class CarsServiceTest {
 	 * the method has been written at CW #64
 	 */
 	void testMostSoldModelNames() {
-		//TODO
+		List<String> actual = carsService.mostSoldModelNames();
+		assertEquals(1, actual.size());
 
 	}
 	@Test
@@ -213,24 +220,46 @@ class CarsServiceTest {
 	 * the method has been written at CW #64
 	 */
 	void testMostPopularModelNames() {
-		//TODO
+		carsService.addCar(car4);
+		carsService.addCar(car5);
+		List<ModelNameAmount> actual = carsService.mostPopularModelNames(4);
+		assertEquals(3, actual.size());
+		assertEquals(MODEL_1, actual.get(0).getModelName());
+		assertEquals(2, actual.get(1).getAmount());
 	}
 	//tests for the methods of the HW #64
 	@Test
 	void testCountTradeDealAtMonthModel() {
-		//TODO
+		long actual1 = carsService.countTradeDealAtMonthModel(MODEL_1, 3, 2023);
+		assertEquals(2, actual1);
+		long actual2 = carsService.countTradeDealAtMonthModel(MODEL_1, 5, 2023);
+		assertEquals(0, actual2);
 	}
 	@Test
 	void testMostPopularModelNameByOwnerAges() {
-		//TODO
+		List<ModelNameAmount> actual = carsService.mostPopularModelNameByOwnerAges(2, 20, 55);
+		assertEquals(2, actual.size());
+		assertEquals(MODEL_1, actual.get(0).getModelName());
 	}
 	@Test
 	void testOneMostPopularColorModel() {
-		//TODO
+		carsService.addCar(car4);
+		carsService.addCar(car5);
+		String actual1 = carsService.oneMostPopularColorModel(MODEL_4);
+		assertEquals(COLOR_3, actual1);
+		String actual2 = carsService.oneMostPopularColorModel(MODEL_1);
+		assertEquals(COLOR_1, actual2);
+		String actual3 = carsService.oneMostPopularColorModel(MODEL_2);
+		assertEquals(null, actual3);
+		
+		
+		
 	}
 	@Test
 	void testMinEnginePowerCapacityByOwnerAges() {
-		//TODO
+		EnginePowerCapacity actual1 = carsService.minEnginePowerCapacityByOwnerAges(20, 35);
+		assertEquals(84, actual1.getEnginePower());
+		assertEquals(1300, actual1.getEngineCapacity());
 	}
 
 

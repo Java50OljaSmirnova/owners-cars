@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
-import jakarta.transaction.Transactional.TxType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import telran.cars.dto.*;
@@ -102,6 +101,9 @@ public class CarsServiceImpl implements CarsService {
 	@Override
 	@Transactional
 	public List<CarDto> getOwnerCars(long id) {
+		if(!carOwnerRepo.existsById(id)) {
+			throw new PersonNotFoundException();
+		}
 		List<Car> cars = carRepo.findByCarOwnerId(id);
 		if(cars.isEmpty()) {
 			log.warn("person with id {} has no car", id);
@@ -154,8 +156,11 @@ public class CarsServiceImpl implements CarsService {
 	 * Try to apply only interface method name without @Query annotation
 	 */
 	public long countTradeDealAtMonthModel(String modelName, int month, int year) {
-		// TODO Auto-generated method stub
-		return 0;
+		LocalDate dateFrom = LocalDate.of(year, month, 1);
+		LocalDate dateTo = dateFrom.plusMonths(1).minusDays(1);
+		long res = tradeDealRepo.countByCarModelModelYearNameAndDateBetween(modelName, dateFrom, dateTo);
+		log.debug("model name is {}, number of trade deal {} on month {} in year {}", modelName, res, month, year);
+		return res;
 	}
 
 	@Override
@@ -165,8 +170,10 @@ public class CarsServiceImpl implements CarsService {
 	 * owners of which have an age in a given range
 	 */
 	public List<ModelNameAmount> mostPopularModelNameByOwnerAges(int nModels, int ageFrom, int ageTo) {
-		// TODO Auto-generated method stub
-		return null;
+		List<ModelNameAmount> res = modelRepo.findMostPopularModelNameByOwnerAges(nModels, ageFrom, ageTo);
+		res.forEach(mn -> log.debug("model name is {}, number of cars {}, cars owners are aged from {} "
+				+ "to {}", mn.getModelName(), mn.getAmount(), ageFrom, ageTo));
+		return res;
 	}
 
 	@Override
@@ -174,8 +181,9 @@ public class CarsServiceImpl implements CarsService {
 	 * returns one most popular color of a given model
 	 */
 	public String oneMostPopularColorModel(String model) {
-		// TODO Auto-generated method stub
-		return null;
+		String res = modelRepo.findOneMostPopularColorModel(model);
+		log.debug("color is {} of car model name {}", res, model);
+		return res;
 	}
 
 	@Override
@@ -184,8 +192,10 @@ public class CarsServiceImpl implements CarsService {
 	 * of car owners having an age in a given range
 	 */
 	public EnginePowerCapacity minEnginePowerCapacityByOwnerAges(int ageFrom, int ageTo) {
-		// TODO Auto-generated method stub
-		return null;
+		EnginePowerCapacity res = carRepo.findMinEnginePowerCapacityByOwnerAges(ageFrom, ageTo);
+		log.debug("min engine power is {}, min engine capacity is {} of car owners are aged from {}"
+				+ "	{}", res.getEnginePower(), res.getEngineCapacity(), ageFrom, ageTo);
+		return res;
 	}
 
 }
