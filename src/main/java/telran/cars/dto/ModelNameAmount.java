@@ -1,7 +1,7 @@
 package telran.cars.dto;
 
 public interface ModelNameAmount {
-	String getModelName();
+	String getName();
 	Long getAmount();
 
 }

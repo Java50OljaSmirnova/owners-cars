@@ -79,9 +79,6 @@ public class CarsController {
 		log.debug("getCarOwner: received car number {}", carNumber);
 		return carsService.getCarOwner(carNumber);
 	}
-	@GetMapping("models")
-	List<String> mostSoldModelNames(){
-		return carsService.mostSoldModelNames();
-	}
+	
 
 }

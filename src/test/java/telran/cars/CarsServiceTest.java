@@ -1,267 +1,333 @@
 package telran.cars;
 
 import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.List;
-
+import telran.cars.exceptions.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
-
 import telran.cars.dto.*;
 import telran.cars.repo.*;
-import telran.cars.exceptions.CarNotFoundException;
-import telran.cars.exceptions.IllegalCarStateException;
-import telran.cars.exceptions.IllegalPersonStateException;
-import telran.cars.exceptions.ModelNotFoundException;
-import telran.cars.exceptions.PersonNotFoundException;
-import telran.cars.exceptions.TradeDealIllegalStateException;
 import telran.cars.service.CarsService;
-import telran.cars.service.model.CarOwner;
-import telran.cars.service.model.TradeDeal;
+import telran.cars.service.model.*;
+
+record ModelNameAmountTest(String name, long amount) implements Comparable<ModelNameAmountTest> {
+
+	@Override
+	public int compareTo(ModelNameAmountTest o) {
+		int res = Long.compare(o.amount, amount);
+		if (res == 0) {
+			res = name.compareTo(o.name);
+		}
+		return res;
+	}
+}
+
 @SpringBootTest
-@Sql(scripts = {"classpath:test_data.sql"})
+@Sql(scripts = { "classpath:test_data.sql" })
+
 class CarsServiceTest {
+	private static final String SERVICE_TEST = "Service Test: ";
+	// Car numbers
 	private static final String CAR_NUMBER_1 = "111-11-111";
 	private static final String CAR_NUMBER_2 = "222-11-111";
 	private static final String CAR_NUMBER_3 = "333-11-111";
 	private static final String CAR_NUMBER_4 = "444-44-444";
 	private static final String CAR_NUMBER_5 = "555-55-555";
+	/**************************************************************/
+	// Model names
 	private static final String MODEL_1 = "model1";
 	private static final String MODEL_2 = "model2";
 	private static final String MODEL_3 = "model3";
 	private static final String MODEL_4 = "model4";
-	private static final long PERSON_ID_1 = 123l;
-	private static final long PERSON_ID_2 = 124l;
-	private static final long PERSON_ID_3 = 125l;
-	private static final String PERSON_NAME_1=  "name1";
-	private static final String PERSON_NAME_2=  "name2";
-	private static final String PERSON_NAME_3=  "name3";
-	private static final String PERSON_BIRTHDATE_1 = "2000-10-10";
-	private static final String PERSON_BIRTHDATE_2 = "1990-12-20";
-	private static final String PERSON_BIRTHDATE_3 = "1975-12-10";
+	/**************************************************************/
+	// Person id's
+	private static final Long PERSON_ID_NOT_EXISTS = 1111111111L;
+	private static final Long PERSON_ID_1 = 123l;
+	private static final Long PERSON_ID_2 = 124l;
+	private static final Long PERSON_ID_3 = 125l;
+	private static final Long PERSON_ID_4 = 126l;
+	private static final Long PERSON_ID_5 = 127l;
+	/**************************************************************/
+	// Person's names
+	private static final String PERSON_NAME_1 = "name1";
+	private static final String PERSON_NAME_2 = "name2";
+	private static final String PERSON_NAME_3 = "name3";
+	private static final String PERSON_NAME_4 = "name4";
+	private static final String PERSON_NAME_5 = "name5";
+	/**************************************************************/
+	// birth days
+	private static final String PERSON_BIRTH_DATE_1 = "2000-10-10";
+	private static final String PERSON_BIRTH_DATE_2 = "1990-12-20";
+	private static final String PERSON_BIRTH_DATE_3 = "1975-12-10";
+	private static final String PERSON_BIRTH_DATE_4 = "1970-01-01";
+	private static final String PERSON_BIRTH_DATE_5 = "2004-10-10";
+	/**************************************************************/
+	// email's
 	private static final String PERSON_EMAIL_1 = "name1@gmail.com";
 	private static final String PERSON_EMAIL_2 = "name2@gmail.com";
 	private static final String PERSON_EMAIL_3 = "name3@gmail.com";
-	private static final int MODEL_YEAR_1 = 2020;
-	private static final int MODEL_YEAR_2 = 2022;
-	private static final int MODEL_YEAR_3 = 2023;
-	private static final  String COLOR_1 = "red";
-	private static final  String COLOR_2 = "silver";
-	private static final  String COLOR_3 = "white";
-	private static final int KILOMETERS_1 = 1000;
-	private static final int KILOMETERS_2 = 10000;
-	private static final  CarState CAR_STATE_1 = CarState.GOOD;
-	private static final  CarState CAR_STATE_2 = CarState.OLD;
-	private static final  CarState CAR_STATE_3 = CarState.MIDDLE;
-	private static final  CarState CAR_STATE_4 = CarState.NEW;
-	private static final  String DATE_1 = "2023-03-10";
-	private static final long PERSON_ID_NOT_EXIST = 111111111l;
-	private static final  String NEW_EMAIL = "name1@tel-ran.co.il";
-	
-	PersonDto personDto1 = new PersonDto(PERSON_ID_1, PERSON_NAME_1, PERSON_BIRTHDATE_1, PERSON_EMAIL_1);
-	PersonDto personDto2 = new PersonDto(PERSON_ID_2, PERSON_NAME_2, PERSON_BIRTHDATE_2, PERSON_EMAIL_2);
-	PersonDto personDto3 = new PersonDto(PERSON_ID_3, PERSON_NAME_3, PERSON_BIRTHDATE_3, PERSON_EMAIL_3);
-	PersonDto personDto = new PersonDto(PERSON_ID_NOT_EXIST, PERSON_NAME_1, PERSON_BIRTHDATE_1, PERSON_EMAIL_1);
-	CarDto car1 = new CarDto(CAR_NUMBER_1, MODEL_1, MODEL_YEAR_1, COLOR_1, KILOMETERS_1, CAR_STATE_1);
-	CarDto car2 = new CarDto(CAR_NUMBER_2, MODEL_1, MODEL_YEAR_1, COLOR_2, KILOMETERS_2, CAR_STATE_2);
-	CarDto car3 = new CarDto(CAR_NUMBER_3 , MODEL_4, MODEL_YEAR_3, COLOR_3, 0, CAR_STATE_4);
-	CarDto car4 = new CarDto(CAR_NUMBER_4, MODEL_4, 2023, COLOR_3, 0, CAR_STATE_4);
-	CarDto car5 = new CarDto(CAR_NUMBER_5, MODEL_3, 2021, COLOR_2, 5000, CAR_STATE_3);
-	
+	private static final String PERSON_EMAIL_4 = "name4@gmail.com";
+	private static final String PERSON_EMAIL_5 = "name5@gmail.com";
+	private static final String NEW_EMAIL = "name1@tel-ran.co.il";
+
+	/**************************************************************/
+	// Trade deal's dates
+	private static final String DATE_TRADE_DEAL_1 = "2023-03-10";
+	private static final String DATE_TRADE_DEAL_2 = "2023-03-20";
+	private static final String DATE_TRADE_DEAL_3 = "2023-04-05";
+	private static final String DATE_TRADE_DEAL_4 = "2023-11-20";
+	private static final String DATE_TRADE_DEAL_5 = "2023-11-20";
+
+	/*******************************************************************************/
+	// Repo's
 	@Autowired
 	CarOwnerRepo carOwnerRepo;
 	@Autowired
 	CarRepo carRepo;
 	@Autowired
 	TradeDealRepo tradeDealRepo;
+
+	// Cars
+	CarDto car1 = new CarDto(CAR_NUMBER_1, MODEL_1, 2020, "red", 1000, CarState.GOOD);
+	CarDto car2 = new CarDto(CAR_NUMBER_2, MODEL_1, 2020, "silver", 10000, CarState.OLD);
+	CarDto car3 = new CarDto(CAR_NUMBER_3, MODEL_4, 2023, "white", 0, CarState.NEW);
+	CarDto car4 = new CarDto(CAR_NUMBER_4, MODEL_4, 2023, "black", 0, CarState.NEW);
+	CarDto car5 = new CarDto(CAR_NUMBER_5, MODEL_3, 2021, "black", 5000, CarState.MIDDLE);
+	/***************************************************************************************/
+	// Persons
+	PersonDto personDto = new PersonDto(PERSON_ID_NOT_EXISTS, PERSON_NAME_1, PERSON_BIRTH_DATE_1, PERSON_EMAIL_1);
+	PersonDto personDto1 = new PersonDto(PERSON_ID_1, PERSON_NAME_1, PERSON_BIRTH_DATE_1, PERSON_EMAIL_1);
+	PersonDto personDto2 = new PersonDto(PERSON_ID_2, PERSON_NAME_2, PERSON_BIRTH_DATE_2, PERSON_EMAIL_2);
+	PersonDto personDto3 = new PersonDto(PERSON_ID_3, PERSON_NAME_3, PERSON_BIRTH_DATE_3, PERSON_EMAIL_3);
+	PersonDto personDto4 = new PersonDto(PERSON_ID_4, PERSON_NAME_4, PERSON_BIRTH_DATE_4, PERSON_EMAIL_4);
+	PersonDto personDto5 = new PersonDto(PERSON_ID_5, PERSON_NAME_5, PERSON_BIRTH_DATE_5, PERSON_EMAIL_5);
+	/***********************************************************************************/
+	// Trade Deals
+	TradeDealDto tradeDealDto4 = new TradeDealDto(CAR_NUMBER_4, PERSON_ID_4, DATE_TRADE_DEAL_4);
+	TradeDealDto tradeDealDto5 = new TradeDealDto(CAR_NUMBER_5, PERSON_ID_5, DATE_TRADE_DEAL_5);
+
+	// service bean
 	@Autowired
 	CarsService carsService;
-		
+
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.ADD_PERSON)
 	void testAddPerson() {
 		assertEquals(personDto, carsService.addPerson(personDto));
-		assertThrowsExactly(IllegalPersonStateException.class,
-				()->carsService.addPerson(personDto1));
+		assertThrowsExactly(IllegalPersonStateException.class, () -> carsService.addPerson(personDto1));
 		CarOwner carOwner = carOwnerRepo.findById(personDto.id()).orElse(null);
 		assertEquals(personDto, carOwner.build());
 	}
 
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.ADD_CAR)
 	void testAddCar() {
 		assertEquals(car4, carsService.addCar(car4));
 		CarDto carNoModel = new CarDto("11111111111", MODEL_1, 2018, "green", 100000, CarState.OLD);
-		assertThrowsExactly(IllegalCarStateException.class, ()-> carsService.addCar(car3));
-		assertThrowsExactly(ModelNotFoundException.class, ()-> carsService.addCar(carNoModel));
-	}
-	@Test
-	void testAddModel() {
-		ModelDto modelDtoNew = new ModelDto(MODEL_1, MODEL_YEAR_2, "Company1", 500, 5000);
-		assertEquals(modelDtoNew, carsService.addModel(modelDtoNew));
+		assertThrowsExactly(IllegalCarStateException.class, () -> carsService.addCar(car3));
+		assertThrowsExactly(ModelNotFoundException.class, () -> carsService.addCar(carNoModel));
 	}
 
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.ADD_MODEL)
+	void testAddModel() {
+		ModelDto modelDtoNew = new ModelDto(MODEL_4, 2024, "Company1", 2000, 100);
+		assertEquals(modelDtoNew, carsService.addModel(modelDtoNew));
+		assertThrowsExactly(ModelIllegalStateException.class, () -> carsService.addModel(modelDtoNew));
+	}
+
+	@Test
+	@DisplayName(SERVICE_TEST + TestNames.UPDATE_PERSON)
 	void testUpdatePerson() {
-		PersonDto personUpdated = new PersonDto(PERSON_ID_1, PERSON_NAME_1, PERSON_BIRTHDATE_1, NEW_EMAIL);
+		PersonDto personUpdated = new PersonDto(PERSON_ID_1, PERSON_NAME_1, PERSON_BIRTH_DATE_1, NEW_EMAIL);
 		assertEquals(personUpdated, carsService.updatePerson(personUpdated));
 		assertEquals(NEW_EMAIL, carOwnerRepo.findById(PERSON_ID_1).get().getEmail());
-		assertThrowsExactly(PersonNotFoundException.class,
-				() -> carsService.updatePerson(personDto));
+		assertThrowsExactly(PersonNotFoundException.class, () -> carsService.updatePerson(personDto));
 	}
 
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.DELETE_PERSON)
 	void testDeletePerson() {
 		assertEquals(personDto1, carsService.deletePerson(PERSON_ID_1));
 		assertThrowsExactly(PersonNotFoundException.class, () -> carsService.deletePerson(PERSON_ID_1));
 	}
 
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.DELETE_CAR)
 	void testDeleteCar() {
 		assertEquals(car1, carsService.deleteCar(CAR_NUMBER_1));
 		assertThrowsExactly(CarNotFoundException.class, () -> carsService.deleteCar(CAR_NUMBER_1));
 	}
 
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.PURCHASE_NEW_OLD_OWNERS)
 	void testPurchaseNewCarOwnerWithOldOwner() {
-		int countDeals = (int)tradeDealRepo.count(); 
-		TradeDealDto tradeDealDto = new TradeDealDto(CAR_NUMBER_1, PERSON_ID_2, DATE_1);
+		int countDeals = (int) tradeDealRepo.count();
+		TradeDealDto tradeDealDto = new TradeDealDto(CAR_NUMBER_1, PERSON_ID_2, DATE_TRADE_DEAL_1);
 		assertEquals(tradeDealDto, carsService.purchase(tradeDealDto));
 		assertEquals(PERSON_ID_2, carRepo.findById(CAR_NUMBER_1).get().getCarOwner().getId());
 		TradeDeal tradeDeal = tradeDealRepo.findAll().get(countDeals);
 		assertEquals(CAR_NUMBER_1, tradeDeal.getCar().getNumber());
 		assertEquals(PERSON_ID_2, tradeDeal.getCarOwner().getId());
-		assertEquals(DATE_1, tradeDeal.getDate().toString());
+		assertEquals(DATE_TRADE_DEAL_1, tradeDeal.getDate().toString());
 
 	}
+
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.PURCHASE_ONLY_NEW_OWNER)
 	void testPurchaseNewCarOwnerWithoutOldOwner() {
-		int countDeals = (int)tradeDealRepo.count(); 
+		int countDeals = (int) tradeDealRepo.count();
 		carsService.addCar(car4);
-		TradeDealDto tradeDealDto = new TradeDealDto(CAR_NUMBER_4, PERSON_ID_2, DATE_1);
+		TradeDealDto tradeDealDto = new TradeDealDto(CAR_NUMBER_4, PERSON_ID_2, DATE_TRADE_DEAL_1);
 		assertEquals(tradeDealDto, carsService.purchase(tradeDealDto));
 		assertEquals(PERSON_ID_2, carRepo.findById(CAR_NUMBER_4).get().getCarOwner().getId());
 		TradeDeal tradeDeal = tradeDealRepo.findAll().get(countDeals);
 		assertEquals(CAR_NUMBER_4, tradeDeal.getCar().getNumber());
 		assertEquals(PERSON_ID_2, tradeDeal.getCarOwner().getId());
-		assertEquals(DATE_1, tradeDeal.getDate().toString());
-
-
+		assertEquals(DATE_TRADE_DEAL_1, tradeDeal.getDate().toString());
 
 	}
+
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.PURCHASE_NOT_FOUND)
 	void testPurchaseNotFound() {
-		TradeDealDto tradeDealCarNotFound = new TradeDealDto(CAR_NUMBER_4, PERSON_ID_1, DATE_1);
-		TradeDealDto tradeDealOwnerNotFound = new TradeDealDto(CAR_NUMBER_1,
-				PERSON_ID_NOT_EXIST, DATE_1);
+		TradeDealDto tradeDealCarNotFound = new TradeDealDto(CAR_NUMBER_4, PERSON_ID_1, DATE_TRADE_DEAL_1);
+		TradeDealDto tradeDealOwnerNotFound = new TradeDealDto(CAR_NUMBER_1, PERSON_ID_NOT_EXISTS, DATE_TRADE_DEAL_1);
 		assertThrowsExactly(PersonNotFoundException.class, () -> carsService.purchase(tradeDealOwnerNotFound));
 		assertThrowsExactly(CarNotFoundException.class, () -> carsService.purchase(tradeDealCarNotFound));
 
 	}
+
+	@Test
+	@DisplayName(SERVICE_TEST + TestNames.PURCHASE_NO_NEW_OWNER)
 	void testPurchaseNoNewCarOwner() {
-		int countDeals = (int)tradeDealRepo.count(); 
-		TradeDealDto tradeDealDto = new TradeDealDto(CAR_NUMBER_1,null, DATE_1);
+		int countDeals = (int) tradeDealRepo.count();
+		TradeDealDto tradeDealDto = new TradeDealDto(CAR_NUMBER_1, null, DATE_TRADE_DEAL_1);
 		assertEquals(tradeDealDto, carsService.purchase(tradeDealDto));
 		assertNull(carRepo.findById(CAR_NUMBER_1).get().getCarOwner());
 		TradeDeal tradeDeal = tradeDealRepo.findAll().get(countDeals);
 		assertEquals(CAR_NUMBER_1, tradeDeal.getCar().getNumber());
 		assertNull(tradeDeal.getCarOwner());
-		assertEquals(DATE_1, tradeDeal.getDate().toString());
+		assertEquals(DATE_TRADE_DEAL_1, tradeDeal.getDate().toString());
 	}
+
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.PURCHASE_SAME_OWNER)
 	void testPurchaseSameOwner() {
-		TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER_1,PERSON_ID_1, DATE_1);
-		assertThrowsExactly(TradeDealIllegalStateException.class,
-				() -> carsService.purchase(tradeDeal));
+		TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER_1, PERSON_ID_1, DATE_TRADE_DEAL_1);
+		assertThrowsExactly(TradeDealIllegalStateException.class, () -> carsService.purchase(tradeDeal));
 		carsService.addCar(car4);
-		TradeDealDto tradeDealNoOwners = new TradeDealDto(CAR_NUMBER_4,null, DATE_1);
-		assertThrowsExactly(TradeDealIllegalStateException.class,
-				() -> carsService.purchase(tradeDealNoOwners));
+		TradeDealDto tradeDealNoOwners = new TradeDealDto(CAR_NUMBER_4, null, DATE_TRADE_DEAL_3);
+		assertThrowsExactly(TradeDealIllegalStateException.class, () -> carsService.purchase(tradeDealNoOwners));
 	}
-
 
 	@Test
 	/**
-	 * test of the method getOwnerCars
-	 * the method has been written at CW #64
+	 * test of the method getOwnerCars the method has been written at CW #64
 	 */
+	@DisplayName(SERVICE_TEST + TestNames.GET_OWNER_CARS)
 	void testGetOwnerCars() {
-		carsService.addCar(car4);
-		TradeDealDto tradeDeal = new TradeDealDto(CAR_NUMBER_4, PERSON_ID_2, DATE_1);
-		carsService.purchase(tradeDeal);
-		List<CarDto> actual = carsService.getOwnerCars(PERSON_ID_2);
-		assertEquals(2, actual.size());
-		assertEquals(car4, actual.get(1));
-		assertThrowsExactly(PersonNotFoundException.class, ()-> carsService.getOwnerCars(126l));
+		carsService.purchase(new TradeDealDto(CAR_NUMBER_2, PERSON_ID_1, DATE_TRADE_DEAL_2));
+		List<CarDto> carsActual1 = carsService.getOwnerCars(PERSON_ID_1);
+		List<CarDto> carsActual2 = carsService.getOwnerCars(PERSON_ID_2);
+		CarDto[] carsExpected1 = { car1, car2 };
+		assertArrayEquals(carsExpected1, carsActual1.toArray(CarDto[]::new));
+		assertTrue(carsActual2.isEmpty());
 	}
+
 	@Test
 	/**
-	 * test of the method getCarOwner
-	 * the method has been written at CW #64
+	 * test of the method getCarOwner the method has been written at CW #64
 	 */
+	@DisplayName(SERVICE_TEST + TestNames.GET_CAR_OWNER)
 	void testGetCarOwner() {
-		PersonDto actual = carsService.getCarOwner(CAR_NUMBER_2);
-		assertEquals(personDto2, actual);
-		assertThrowsExactly(CarNotFoundException.class, ()-> carsService.getCarOwner(CAR_NUMBER_4));
+		carsService.addCar(car4);
+		assertNull(carsService.getCarOwner(CAR_NUMBER_4));
+		assertEquals(personDto1, carsService.getCarOwner(CAR_NUMBER_1));
+		assertThrowsExactly(CarNotFoundException.class, () -> carsService.getCarOwner(CAR_NUMBER_5));
 	}
+
 	@Test
 	/**
-	 * test of the method mostSoldModelNames
-	 * the method has been written at CW #64
+	 * test of the method mostSoldModelNames the method has been written at CW #64
 	 */
+	@DisplayName(SERVICE_TEST + TestNames.MODEL_NAMES_MOST_SOLD)
 	void testMostSoldModelNames() {
-		List<String> actual = carsService.mostSoldModelNames();
-		assertEquals(1, actual.size());
+		setUpStatistics();
+		List<String> modelNamesActual = carsService.mostSoldModelNames();
+		String[] modelNamesExpected = { "model1", "model4" };
+		assertArrayEquals(modelNamesExpected, modelNamesActual.toArray(String[]::new));
 
 	}
+
 	@Test
 	/**
-	 * test of the method mostPopularModelNames
-	 * the method has been written at CW #64
+	 * test of the method mostPopularModelNames the method has been written at CW
+	 * #64
 	 */
+	@DisplayName(SERVICE_TEST + TestNames.MODEL_NAMES_MOST_POPULAR)
 	void testMostPopularModelNames() {
-		carsService.addCar(car4);
-		carsService.addCar(car5);
-		List<ModelNameAmount> actual = carsService.mostPopularModelNames(4);
-		assertEquals(3, actual.size());
-		assertEquals(MODEL_1, actual.get(0).getModelName());
-		assertEquals(2, actual.get(1).getAmount());
+		setUpStatistics();
+		List<ModelNameAmount> list = carsService.mostPopularModelNames(2);
+		ModelNameAmountTest[] expected = { new ModelNameAmountTest(MODEL_1, 2), new ModelNameAmountTest(MODEL_4, 2) };
+
+		modelNameAmountsTest(list, expected);
 	}
-	//tests for the methods of the HW #64
+
+	private void modelNameAmountsTest(List<ModelNameAmount> list, ModelNameAmountTest[] expected) {
+		ModelNameAmountTest[] actual = list.stream().map(ma -> new ModelNameAmountTest(ma.getName(), ma.getAmount()))
+				.sorted().toArray(ModelNameAmountTest[]::new);
+
+		assertArrayEquals(expected, actual);
+	}
+
+	// tests for the methods of the HW #64
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.TRADE_DEALS_COUNT_MONTH_MODEL)
 	void testCountTradeDealAtMonthModel() {
-		long actual1 = carsService.countTradeDealAtMonthModel(MODEL_1, 3, 2023);
-		assertEquals(2, actual1);
-		long actual2 = carsService.countTradeDealAtMonthModel(MODEL_1, 5, 2023);
-		assertEquals(0, actual2);
+		setUpStatistics();
+		assertEquals(2, carsService.countTradeDealAtMonthModel(MODEL_1, 3, 2023));
 	}
+
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.MODEL_NAMES_MOST_POPULAR_OWNER_AGES)
 	void testMostPopularModelNameByOwnerAges() {
-		List<ModelNameAmount> actual = carsService.mostPopularModelNameByOwnerAges(2, 20, 55);
-		assertEquals(2, actual.size());
-		assertEquals(MODEL_1, actual.get(0).getModelName());
+		setUpStatistics();
+		List<ModelNameAmount> list = carsService.mostPopularModelNameByOwnerAges(2, 30, 60);
+		ModelNameAmountTest[] expected = { new ModelNameAmountTest(MODEL_4, 2), new ModelNameAmountTest(MODEL_1, 1) };
+		modelNameAmountsTest(list, expected);
 	}
+
 	@Test
+	@DisplayName(SERVICE_TEST + TestNames.COLOR_MOST_POPULR_MODEL)
 	void testOneMostPopularColorModel() {
+		setUpStatistics();
+		assertEquals("red", carsService.oneMostPopularColorModel(MODEL_1));
+
+	}
+
+	@Test
+	@DisplayName(SERVICE_TEST + TestNames.ENGINE_POWER_CAPACITY_MIN_AGES)
+	void testMinEnginePowerCapacityByOwnerAges() {
+		setUpStatistics();
+		EnginePowerCapacity epc = carsService.minEnginePowerCapacityByOwnerAges(30, 60);
+		int minPowerActual = epc.getPower();
+		int minCapacityActual = epc.getCapacity();
+		int minPowerExpected = 84;
+		int minCapacityExpected = 1300;
+		assertEquals(minPowerExpected, minPowerActual);
+		assertEquals(minCapacityExpected, minCapacityActual);
+	}
+
+	private void setUpStatistics() {
 		carsService.addCar(car4);
 		carsService.addCar(car5);
-		String actual1 = carsService.oneMostPopularColorModel(MODEL_4);
-		assertEquals(COLOR_3, actual1);
-		String actual2 = carsService.oneMostPopularColorModel(MODEL_1);
-		assertEquals(COLOR_1, actual2);
-		String actual3 = carsService.oneMostPopularColorModel(MODEL_2);
-		assertEquals(null, actual3);
-		
-		
-		
+		carsService.addPerson(personDto4);
+		carsService.addPerson(personDto5);
+		carsService.purchase(tradeDealDto4);
+		carsService.purchase(tradeDealDto5);
 	}
-	@Test
-	void testMinEnginePowerCapacityByOwnerAges() {
-		EnginePowerCapacity actual1 = carsService.minEnginePowerCapacityByOwnerAges(20, 35);
-		assertEquals(84, actual1.getEnginePower());
-		assertEquals(1300, actual1.getEngineCapacity());
-	}
-
-
 
 }

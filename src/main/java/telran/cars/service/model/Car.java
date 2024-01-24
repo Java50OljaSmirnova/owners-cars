@@ -11,7 +11,7 @@ import telran.cars.dto.CarDto;
 import telran.cars.dto.CarState;
 @Entity
 @Getter
-@Table(name = "cars")
+@Table(name="cars")
 @NoArgsConstructor
 public class Car {
 	@Id
@@ -28,7 +28,7 @@ public class Car {
 	CarOwner carOwner;
 	String color;
 	@Setter
-	int kilometers;
+	Integer kilometers;
 	@Enumerated(EnumType.STRING) // value in the table will be a string(by default a number)
 	@Column(name="car_state")
 	CarState state;

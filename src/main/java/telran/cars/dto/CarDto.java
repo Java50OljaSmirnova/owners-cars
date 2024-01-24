@@ -10,13 +10,10 @@ public record CarDto(
 		@NotEmpty(message=MISSING_CAR_MODEL_MESSAGE) String model, 
 		@NotNull(message = MISSING_MODEL_YEAR_MESSAGE) @Min(value = MIN_YEAR_VALUE, message = WRONG_MIN_YEAR_VALUE) 
 		@Max(value = MAX_YEAR_VALUE, message = WRONG_MAX_YEAR_VALUE) int year, 
-		@NotEmpty (message = MISSING_CAR_COLOR_MESSAGE) String color, 
-		@NotNull(message = MISSING_KILOMETERS_MESSAGE) @Min(value = MIN_KILOMETERS_VALUE, message = WRONG_MIN_KILOMETERS_VALUE) 
-		    @Max(value = MAX_KILOMETERS_VALUE, message = WRONG_MAX_KILOMETERS_VALUE) int kilometrs,
-		@NotEmpty(message=MISSING_CAR_STATE_MESSAGE) CarState state) 
+		String color, int kilometrs, CarState state) 
 {
 	
-
+ 
 	@Override
 	public int hashCode() {
 		return Objects.hash(number);

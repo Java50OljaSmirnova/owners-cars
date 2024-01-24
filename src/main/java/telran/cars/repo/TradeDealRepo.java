@@ -9,7 +9,9 @@ import telran.cars.service.model.*;
 
 public interface TradeDealRepo extends JpaRepository<TradeDeal, Long> {
 	List<TradeDeal> findByCarNumber(String carNumber);
+	
 	List<TradeDeal> findByCarOwnerId(Long id);
+	
 	long countByCarModelModelYearNameAndDateBetween(String modelName, LocalDate dateFrom, LocalDate dateTo);
 
 }
