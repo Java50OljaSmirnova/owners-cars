@@ -38,7 +38,7 @@ class CarsServiceTest {
 	/**************************************************************/
 	// Model names
 	private static final String MODEL_1 = "model1";
-	private static final String MODEL_2 = "model2";
+//	private static final String MODEL_2 = "model2";
 	private static final String MODEL_3 = "model3";
 	private static final String MODEL_4 = "model4";
 	/**************************************************************/

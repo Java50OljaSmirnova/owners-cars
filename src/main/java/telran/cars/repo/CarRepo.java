@@ -14,14 +14,12 @@ public interface CarRepo extends JpaRepository<Car, String> {
 	List<Car> findByCarOwnerId(long id);
 	
 	/*********************************************************/
-	@Query(value="select color from cars where model_name=:model group by color order"
-			+ " by count(*) desc, color asc  limit 1", nativeQuery=true)
+	@Query(value="select car.color from Car car where model.modelYear.name=:model group by color order"
+			+ " by count(*) desc, color asc  limit 1", nativeQuery=false)
 	String findOneMostPopularColorModel(String model);
 	
 	/*********************************************************/
-	@Query(value="select min(engine_power) as power, min(engine_capacity) as capacity "
-			+ "from (select * from car_owners where birth_date between :birthDate1 and :birthDate2)"
-			+ " owner_age join cars on id=owner_id join models on"
-			+ " cars.model_name=models.model_name", nativeQuery=true)
+	@Query("select min(car.model.enginePower) as power, min(car.model.engineCapacity) as capacity"
+			+ " from Car car where carOwner.birthDate between :birthDate1 and :birthDate2 ")
 	EnginePowerCapacity findMinEnginePowerCapacityByOwnerAges(LocalDate birthDate1, LocalDate birthDate2);;
 }

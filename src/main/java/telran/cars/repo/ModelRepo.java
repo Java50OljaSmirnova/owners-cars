@@ -10,24 +10,21 @@ import telran.cars.dto.ModelNameAmount;
 import telran.cars.service.model.*;
 
 public interface ModelRepo extends JpaRepository<Model, ModelYear> {
-	@Query(value = "select model_name from cars join trade_deals td"
-			+ " on cars.car_number=td.car_number group by model_name "
-			+ " having count(*) = (select max(count) from "
-			+ "(select count(*) as count from cars join trade_deals "
-			+ " on cars.car_number = trade_deals.car_number group by model_name)) ", nativeQuery = true)
+	@Query("select car.model.modelYear.name from TradeDeal"
+			+ " group by car.model.modelYear.name"
+			+ " having count(*) = (select max(count) from"
+			+ " (select count(*) as count from TradeDeal group by car.model.modelYear.name)) ")
 	List<String> findMostSoldModelNames();
 	
 	/*********************************************************/
-	@Query(value = "select c.model_name as name, count(*) as amount "
-			+ "from cars c group by c.model_name order by count(*) desc limit :nModels", nativeQuery = true)
+	@Query("select model.modelYear.name as name, count(*) as amount "
+			+ "from Car group by model.modelYear.name order by count(*) desc limit :nModels")
 	List<ModelNameAmount> findMostPopularModelNames(int nModels);
 	
 	/*********************************************************/
-	@Query(value="select model_name as name, count(*) as amount "
-			+ "from (select * from car_owners where birth_date between :birthDate1 and :birthDate2)"
-			+ " owners_age"
-			+ " join cars where id=owner_id "
-			+ "group by model_name order by count(*) desc limit :nModels", nativeQuery=true)
+	@Query("select model.modelYear.name as name, count(*) as amount "
+			+ "from Car where carOwner.birthDate between :birthDate1 and :birthDate2 "
+			+ "group by model.modelYear.name order by count(*) desc limit :nModels")
 	List<ModelNameAmount> findMostPopularModelNameByOwnerAges(int nModels, LocalDate birthDate1, LocalDate birthDate2);
 	
 

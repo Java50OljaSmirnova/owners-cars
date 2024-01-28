@@ -46,5 +46,9 @@ public class Car {
 	public CarDto build() {
 		return new CarDto(number, model.modelYear.getName(), model.modelYear.getYear(), color, kilometers, state);
 	}
+	@Override
+	public String toString() {
+		return "Car [number=" + number + ", color=" + color + ", kilometers=" + kilometers + ", state=" + state + "]";
+	}
 
 }
